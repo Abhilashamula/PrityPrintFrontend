@@ -1,0 +1,15 @@
+{
+  "recommendations": [
+    "dbaeumer.vscode-eslint",
+    "esbenp.prettier-vscode",
+    "ms-playwright.playwright",
+    "prisma.prisma",
+    "ms-azuretools.vscode-docker",
+    "usernamehw.errorlens",
+    "editorconfig.editorconfig",
+    "redhat.vscode-yaml",
+    "rangav.vscode-thunder-client",
+    "GitHub.copilot"
+  ],
+  "unwantedRecommendations": []
+}
