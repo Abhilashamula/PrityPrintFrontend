@@ -24,11 +24,14 @@ export const DEFAULT_PRICING: PricingConfig = {
 interface SessionState {
   // Kiosk identification
   kioskId: string
+  selectedPrinterId: string | null
+  selectedPrinterName: string | null
 
   // Upload step
   file:            File | null
   filePreviewUrl:  string | null    // data URL for image / canvas for PDF first page
   parsedPageCount: number
+  documentId: string | null
 
   // Options step
   printOptions: PrintOptions
@@ -43,6 +46,7 @@ interface SessionState {
 
   // Payment step
   orderId:          string | null   // our DB order ID
+  localOrderId:     string | null   // development simulator order ID
   razorpayOrderId:  string | null   // Razorpay order ID
   paymentId:        string | null   // Razorpay payment ID
 
@@ -56,12 +60,15 @@ interface SessionState {
 
 interface SessionActions {
   setKioskId:      (id: string) => void
+  setPrinter:      (id: string, name: string) => void
   setFile:         (file: File | null, previewUrl: string | null, pageCount: number) => void
+  setDocumentId:   (id: string | null) => void
   setPrintOptions: (opts: Partial<PrintOptions>) => void
   setPricing:      (pricing: PricingConfig) => void
   setPhone:        (phone: string) => void
   updateCost:      () => void
   setOrder:        (orderId: string, razorpayOrderId: string) => void
+  setLocalOrderId:  (orderId: string | null) => void
   setPayment:      (paymentId: string) => void
   setJobStatus:    (status: JobStatus, pagesCompleted: number) => void
   setRefund:       (amount: number) => void
@@ -72,15 +79,19 @@ interface SessionActions {
 
 const initial: SessionState = {
   kioskId:         import.meta.env.VITE_KIOSK_ID ?? 'kiosk_001',
+  selectedPrinterId: null,
+  selectedPrinterName: null,
   file:            null,
   filePreviewUrl:  null,
   parsedPageCount: 0,
+  documentId:       null,
   printOptions:    DEFAULT_PRINT_OPTIONS,
   phone:           '',
   totalPages:      0,
   totalCost:       0,
   pricing:         DEFAULT_PRICING,
   orderId:         null,
+  localOrderId:    null,
   razorpayOrderId: null,
   paymentId:       null,
   jobStatus:       null,
@@ -124,6 +135,8 @@ export const useSessionStore = create<SessionState & SessionActions>((set, get) 
 
   setKioskId: (id) => set({ kioskId: id }),
 
+  setPrinter: (id, name) => set({ selectedPrinterId: id, selectedPrinterName: name }),
+
   setFile: (file, filePreviewUrl, parsedPageCount) => {
     set({ file, filePreviewUrl, parsedPageCount })
     // Re-compute cost with new page count
@@ -133,6 +146,8 @@ export const useSessionStore = create<SessionState & SessionActions>((set, get) 
       printOptions.colorMode === 'color' ? pricing.colorPerPage : pricing.bwPerPage
     set({ totalPages, totalCost: totalPages * pricePerPage })
   },
+
+  setDocumentId: (documentId) => set({ documentId }),
 
   setPrintOptions: (opts) => {
     const merged = { ...get().printOptions, ...opts }
@@ -166,6 +181,8 @@ export const useSessionStore = create<SessionState & SessionActions>((set, get) 
   },
 
   setOrder: (orderId, razorpayOrderId) => set({ orderId, razorpayOrderId }),
+
+  setLocalOrderId: (localOrderId) => set({ localOrderId }),
 
   setPayment: (paymentId) => set({ paymentId }),
 

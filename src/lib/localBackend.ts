@@ -3,6 +3,7 @@ import { startSimulatedPrintJob, type CancellablePrintJob } from './printerSimul
 
 export interface LocalOrderRequest {
   kioskId: string
+  printerId: string
   fileName: string
   totalPages: number
   totalCost: number
@@ -15,6 +16,7 @@ export interface LocalOrder {
   id: string
   gatewayOrderId: string
   kioskId: string
+  printerId: string
   fileName: string
   totalPages: number
   totalCost: number

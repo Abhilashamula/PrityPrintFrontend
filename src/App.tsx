@@ -46,6 +46,7 @@ export default function App() {
         <Route path="/error"     element={<ErrorScreen />} />
         <Route path="/signup"    element={<SignupScreen />} />
         <Route path="/login"     element={<LoginScreen />} />
+        <Route path="/admin"     element={<AdminScreen />} />
         {/* Catch-all back to home */}
         <Route path="*"          element={<Navigate to="/" replace />} />
       </Routes>

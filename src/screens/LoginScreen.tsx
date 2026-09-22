@@ -17,6 +17,13 @@ export default function LoginScreen() {
     setLoading(true)
     setError(null)
     try {
+      if (email.trim().toLowerCase() === 'admin' && password === 'admin') {
+        const result = await apiClient.adminLogin('admin', 'admin')
+        apiClient.setAccessToken(result.accessToken)
+        sessionStorage.setItem('pingprint_admin_token', result.accessToken)
+        navigate('/admin')
+        return
+      }
       const result = await apiClient.login(email.trim(), password)
       setUser(result.user)
       navigate('/upload')
@@ -38,7 +45,7 @@ export default function LoginScreen() {
         <h1 className="font-display text-6xl font-semibold leading-[0.9]">Welcome<br /><em className="text-lux-copper">back.</em></h1>
         <p className="mt-5 text-sm leading-6 text-lux-ink/60">Sign in to access your wallet and saved account details. You can always print as a guest.</p>
         <form onSubmit={submit} className="mt-8 space-y-4 border border-lux-ink/10 bg-white p-6 shadow-sm sm:p-8">
-          <label className="block text-xs font-extrabold uppercase tracking-[0.1em] text-lux-ink/55">Email<input required type="email" value={email} onChange={(event) => setEmail(event.target.value)} className="mt-2 min-h-12 w-full border border-lux-ink/15 bg-lux-paper px-4 text-sm font-normal normal-case tracking-normal outline-none focus:border-lux-copper" placeholder="you@example.com" /></label>
+          <label className="block text-xs font-extrabold uppercase tracking-[0.1em] text-lux-ink/55">Email or username<input required type="text" value={email} onChange={(event) => setEmail(event.target.value)} className="mt-2 min-h-12 w-full border border-lux-ink/15 bg-lux-paper px-4 text-sm font-normal normal-case tracking-normal outline-none focus:border-lux-copper" placeholder="you@example.com" /></label>
           <label className="block text-xs font-extrabold uppercase tracking-[0.1em] text-lux-ink/55">Password<input required type="password" value={password} onChange={(event) => setPassword(event.target.value)} className="mt-2 min-h-12 w-full border border-lux-ink/15 bg-lux-paper px-4 text-sm font-normal normal-case tracking-normal outline-none focus:border-lux-copper" placeholder="Your password" /></label>
           {error && <p role="alert" className="border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>}
           <button disabled={loading} className="flex min-h-13 w-full items-center justify-center gap-3 bg-lux-ink px-5 py-4 text-sm font-extrabold uppercase tracking-[0.12em] text-white hover:bg-lux-copper disabled:opacity-50">{loading ? 'Signing in…' : 'Sign in'} <ArrowRight size={17} /></button>

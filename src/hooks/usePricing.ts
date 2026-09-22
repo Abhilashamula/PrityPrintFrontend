@@ -1,33 +1,21 @@
 import { useEffect } from 'react'
-import { supabase, isSupabaseConfigured } from '../lib/supabaseClient'
 import { useSessionStore, DEFAULT_PRICING } from '../store/sessionStore'
-import type { PricingConfig } from '../types'
+import { apiClient } from '../lib/apiClient'
 
 /**
- * usePricing — fetches pricing config from the `pricing_config` Supabase table once on mount.
- * Falls back to env-var defaults when Supabase is not yet configured.
+ * usePricing — fetches the master pricing configuration from the backend.
  */
 export function usePricing() {
   const setPricing = useSessionStore((s) => s.setPricing)
 
   useEffect(() => {
-    if (!isSupabaseConfigured || !supabase) return
-
-    supabase
-      .from('pricing_config')
-      .select('key, value')
-      .then(({ data, error }) => {
-        if (error || !data) return
-        const map: Record<string, string> = {}
-        for (const row of data) map[row.key] = row.value
-
-        const pricing: PricingConfig = {
-          bwPerPage:    Number(map['price_bw_per_page']    ?? DEFAULT_PRICING.bwPerPage),
-          colorPerPage: Number(map['price_color_per_page'] ?? DEFAULT_PRICING.colorPerPage),
-          maxFileMb:    Number(map['max_file_mb']          ?? DEFAULT_PRICING.maxFileMb),
-        }
-        setPricing(pricing)
+    void apiClient.pricing().then((data) => {
+      setPricing({
+        bwPerPage: data.price_bw_minor / 100,
+        colorPerPage: data.price_color_minor / 100,
+        maxFileMb: data.max_file_mb,
       })
+    }).catch(() => setPricing(DEFAULT_PRICING))
   }, [setPricing])
 }
 

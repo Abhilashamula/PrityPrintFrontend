@@ -20,8 +20,11 @@ export default function SummaryScreen() {
   const totalCost     = useSessionStore((s) => s.totalCost)
   const pricing       = useSessionStore((s) => s.pricing)
   const phone         = useSessionStore((s) => s.phone)
+  const selectedPrinterId = useSessionStore((s) => s.selectedPrinterId)
   const setPhone      = useSessionStore((s) => s.setPhone)
   const setOrder      = useSessionStore((s) => s.setOrder)
+  const setLocalOrderId = useSessionStore((s) => s.setLocalOrderId)
+  const documentId = useSessionStore((s) => s.documentId)
 
   const { isPaperOut } = useKioskStatus()
   const [loading, setLoading] = useState(false)
@@ -33,11 +36,17 @@ export default function SummaryScreen() {
 
   const handleProceed = async () => {
     if (!file || isPaperOut) return
+    if (!selectedPrinterId) {
+      setOrderError('Please choose a printer before continuing.')
+      return
+    }
     setLoading(true)
     setOrderError(null)
     try {
-      const order = createLocalOrder({
+      if (!documentId) throw new Error('Please upload the document again before continuing.')
+      const localOrder = createLocalOrder({
         kioskId: useSessionStore.getState().kioskId,
+        printerId: selectedPrinterId,
         fileName: file.name,
         totalPages,
         totalCost,
@@ -45,10 +54,18 @@ export default function SummaryScreen() {
         paperWidthMm: PAPER_DIMENSIONS_MM[printOptions.paperSize].width,
         paperHeightMm: PAPER_DIMENSIONS_MM[printOptions.paperSize].height,
       })
-      const razorpayOrder = await apiClient.createRazorpayOrder(
-        Math.round(totalCost * 100),
-        `print_${order.id}`,
-      )
+      const order = await apiClient.createPrintOrder({
+        printerId: selectedPrinterId,
+        documentId,
+        copies: printOptions.copies,
+        paperSize: printOptions.paperSize,
+        paperType: 'PLAIN',
+        colorMode: printOptions.colorMode === 'color' ? 'COLOR' : 'BW',
+        duplex: printOptions.sides === 'double',
+        orientation: printOptions.orientation.toUpperCase(),
+      })
+      const razorpayOrder = await apiClient.createRazorpayOrderForPrint(order.id)
+      setLocalOrderId(localOrder.id)
       setOrder(order.id, razorpayOrder.id)
       navigate('/pay')
     } catch (error) {

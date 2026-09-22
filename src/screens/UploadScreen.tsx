@@ -1,11 +1,12 @@
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { UploadCloud, ArrowRight, X, AlertCircle, Check, FileText, LockKeyhole, ShieldCheck, Smartphone } from 'lucide-react'
+import { UploadCloud, ArrowRight, X, AlertCircle, Check, FileText, LockKeyhole, MapPin, ShieldCheck, Smartphone } from 'lucide-react'
 import * as pdfjsLib from 'pdfjs-dist'
 import FilePreview from '../components/FilePreview'
 import { useSessionStore } from '../store/sessionStore'
 import { ACCEPTED_EXTENSIONS, validateDocumentFile } from '../lib/documentValidation'
 import AccountMenu from '../components/AccountMenu'
+import { apiClient } from '../lib/apiClient'
 
 // Use CDN worker to avoid Vite worker bundling issues
 pdfjsLib.GlobalWorkerOptions.workerSrc =
@@ -32,7 +33,10 @@ async function extractPdfInfo(file: File): Promise<{ pageCount: number; previewU
 export default function UploadScreen() {
   const navigate   = useNavigate()
   const setFile    = useSessionStore((s) => s.setFile)
+  const setDocumentId = useSessionStore((s) => s.setDocumentId)
   const pricing    = useSessionStore((s) => s.pricing)
+  const selectedPrinterId = useSessionStore((s) => s.selectedPrinterId)
+  const selectedPrinterName = useSessionStore((s) => s.selectedPrinterName)
 
   const [isDragging, setIsDragging] = useState(false)
   const [error,      setError]      = useState<string | null>(null)
@@ -44,6 +48,10 @@ export default function UploadScreen() {
   const [stagedPageCount,  setStagedPageCount]  = useState(0)
 
   const inputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    if (!selectedPrinterId) navigate('/', { replace: true })
+  }, [navigate, selectedPrinterId])
 
   const processFile = useCallback(async (file: File) => {
     setError(null)
@@ -92,10 +100,18 @@ export default function UploadScreen() {
     if (file) void processFile(file)
   }
 
-  const handleContinue = () => {
+  const handleContinue = async () => {
     if (!stagedFile) return
-    setFile(stagedFile, stagedPreviewUrl, stagedPageCount)
-    navigate('/options')
+    setLoading(true)
+    setError(null)
+    try {
+      const document = await apiClient.uploadDocument(stagedFile)
+      setDocumentId(document.id)
+      setFile(stagedFile, stagedPreviewUrl, document.pageCount)
+      navigate('/options')
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Could not upload the document.')
+    } finally { setLoading(false) }
   }
 
   const handleClear = () => {
@@ -115,7 +131,7 @@ export default function UploadScreen() {
           <span className="leading-none"><span className="block text-lg font-extrabold tracking-[-0.06em]">Ping<span className="text-lux-copper">&amp;</span>Print</span><span className="mt-1 block text-[9px] font-bold uppercase tracking-[0.16em] text-lux-ink/50">Campus printing</span></span>
         </a>
         <div className="flex items-center gap-2 text-xs font-extrabold uppercase tracking-[0.12em] text-lux-ink/45 sm:gap-4">
-          <span className="flex items-center gap-2 text-lux-ink"><span className="flex h-7 w-7 items-center justify-center rounded-full bg-lux-copper text-white">1</span> Upload</span>
+          <span className="flex items-center gap-2 text-lux-ink"><span className="flex h-7 w-7 items-center justify-center rounded-full bg-lux-copper text-white">1</span><span className="hidden sm:inline">Upload</span></span>
           <span className="text-lux-ink/20">/</span><span>Options</span><span className="text-lux-ink/20">/</span><span>Pay</span>
           <AccountMenu />
         </div>
@@ -124,7 +140,7 @@ export default function UploadScreen() {
       {/* Body */}
       <div className="flex-1 flex flex-col items-center px-6 py-12 max-w-5xl mx-auto w-full gap-8 lg:py-16">
         <div className="w-full flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
-          <div><p className="mb-3 text-xs font-extrabold uppercase tracking-[0.25em] text-lux-copper">Step 01 / Start here</p><h1 className="font-display text-5xl font-semibold leading-none text-lux-ink sm:text-6xl">Bring your work<br /><em className="text-lux-copper">to life.</em></h1><p className="mt-4 text-sm text-lux-ink/60">PDF, Word, PowerPoint, Excel, JPG, PNG · up to {pricing.maxFileMb} MB</p></div>
+          <div><p className="mb-3 text-xs font-extrabold uppercase tracking-[0.25em] text-lux-copper">Step 01 / Start here</p><h1 className="font-display text-5xl font-semibold leading-none text-lux-ink sm:text-6xl">Bring your work<br /><em className="text-lux-copper">to life.</em></h1><p className="mt-4 text-sm text-lux-ink/60">PDF, Word, PowerPoint, Excel, JPG, PNG · up to {pricing.maxFileMb} MB</p>{selectedPrinterName && <div className="mt-4 inline-flex max-w-full items-center gap-2 border border-lux-copper/30 bg-white px-3 py-2 text-xs font-bold text-lux-ink"><MapPin size={14} className="shrink-0 text-lux-copper" /><span className="truncate">Printing at {selectedPrinterName}</span></div>}</div>
           <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.1em] text-lux-ink/55"><LockKeyhole size={16} className="text-lux-copper" /> Deleted after printing</div>
         </div>
 
@@ -219,7 +235,7 @@ export default function UploadScreen() {
                        text-base py-5 touch-target flex items-center justify-center gap-3
                        transition-colors animate-slide-up shadow-lg uppercase tracking-[0.12em]"
           >
-            Continue to Print Options
+            {loading ? 'Uploading securely...' : 'Continue to Print Options'}
             <ArrowRight size={24} />
           </button>
         )}

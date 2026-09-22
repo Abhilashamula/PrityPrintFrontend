@@ -66,11 +66,11 @@ function PrinterAnimation({ printing }: { printing: boolean }) {
 export default function PrintingScreen() {
   const navigate       = useNavigate()
   const paymentId      = useSessionStore((s) => s.paymentId)
-  const orderId        = useSessionStore((s) => s.orderId)
+  const localOrderId   = useSessionStore((s) => s.localOrderId)
   const totalPages     = useSessionStore((s) => s.totalPages)
   const file           = useSessionStore((s) => s.file)
 
-  const { phase, completed } = usePrinterJob(totalPages, orderId)
+  const { phase, completed } = usePrinterJob(totalPages, localOrderId)
 
   // Guard: redirect if no payment
   useEffect(() => {
