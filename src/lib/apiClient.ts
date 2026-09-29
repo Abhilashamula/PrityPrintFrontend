@@ -26,6 +26,22 @@ export interface AvailablePrinter {
   status: 'ONLINE' | 'BUSY' | 'OFFLINE' | 'PAPER_OUT' | 'ERROR' | string
 }
 
+export interface PrinterMediaOption {
+  id: string
+  paperSize: string
+  paperType: string
+  colorModes: string[]
+  duplexSupported: boolean
+  priceBwMinor: number
+  priceColorMinor: number
+}
+
+export interface PrinterCapabilities {
+  printerId: string
+  available: boolean
+  mediaOptions: PrinterMediaOption[]
+}
+
 let accessToken: string | null = null
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
@@ -44,7 +60,19 @@ async function upload<T>(path: string, file: File): Promise<T> {
   if (accessToken) headers.set('Authorization', `Bearer ${accessToken}`)
   const form = new FormData()
   form.append('file', file)
-  const response = await fetch(`${API_URL}${path}`, { method: 'POST', headers, body: form })
+  const controller = new AbortController()
+  const timeout = window.setTimeout(() => controller.abort(), 120_000)
+  let response: Response
+  try {
+    response = await fetch(`${API_URL}${path}`, { method: 'POST', headers, body: form, signal: controller.signal })
+  } catch (error) {
+    if (error instanceof DOMException && error.name === 'AbortError') {
+      throw new Error('The upload took too long. Please try a smaller or simpler document.')
+    }
+    throw new Error('Could not connect to the print server.')
+  } finally {
+    window.clearTimeout(timeout)
+  }
   const body = await response.json().catch(() => ({}))
   if (!response.ok) throw new Error(body.error ?? 'The upload failed.')
   return body as T
@@ -95,6 +123,9 @@ export const apiClient = {
   availablePrinters() {
     return request<AvailablePrinter[]>('/printers')
   },
+  printerCapabilities(printerId: string) {
+    return request<PrinterCapabilities>(`/printers/${printerId}/capabilities`)
+  },
   pricing() {
     return request<{ price_bw_minor: number; price_color_minor: number; max_file_mb: number }>('/pricing')
   },
@@ -113,7 +144,7 @@ export const apiClient = {
       body: JSON.stringify({ amountMinor, receipt }),
     })
   },
-  createPrintOrder(details: { printerId: string; documentId: string; copies: number; paperSize: string; paperType: string; colorMode: string; duplex: boolean; orientation: string }) {
+  createPrintOrder(details: { printerId: string; documentId: string; mediaConfigId: string | null; copies: number; paperSize: string; paperType: string; colorMode: string; duplex: boolean; orientation: string; pageRange: string | null }) {
     return request<{ id: string; amountMinor: number; currency: string; status: string; totalPages: number; copies: number; printerId: string; fileName: string }>('/print-orders', {
       method: 'POST',
       body: JSON.stringify(details),
@@ -126,10 +157,13 @@ export const apiClient = {
     })
   },
   verifyRazorpayPayment(orderId: string, paymentId: string, signature: string) {
-    return request<{ verified: boolean; status: string }>('/payments/razorpay/verify', {
+    return request<{ verified: boolean; status: string; orderId: string }>('/payments/razorpay/verify', {
       method: 'POST',
       body: JSON.stringify({ orderId, paymentId, signature }),
     })
+  },
+  printOrderStatus(orderId: string) {
+    return request<{ orderId: string; orderStatus: string; printJobStatus: string; pagesCompleted: number; totalPages: number; failureReason: string }>(`/print-orders/${orderId}/status`)
   },
   adminLogin(username: string, password: string) {
     return request<{ accessToken: string; role: string }>('/admin/login', {

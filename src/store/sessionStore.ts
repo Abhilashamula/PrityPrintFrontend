@@ -11,6 +11,8 @@ export const DEFAULT_PRINT_OPTIONS: PrintOptions = {
   pageRange:       'all',
   customPageRange: '',
   paperSize:       'A4',
+  paperType:       'PLAIN',
+  mediaConfigId:   null,
 }
 
 export const DEFAULT_PRICING: PricingConfig = {
@@ -40,6 +42,8 @@ interface SessionState {
   phone:         string
   totalPages:    number             // computed from page range × copies
   totalCost:     number             // computed cost in ₹
+  serverAmountMinor: number | null
+  currency: string
 
   // Pricing (fetched from DB; falls back to env defaults)
   pricing: PricingConfig
@@ -67,7 +71,8 @@ interface SessionActions {
   setPricing:      (pricing: PricingConfig) => void
   setPhone:        (phone: string) => void
   updateCost:      () => void
-  setOrder:        (orderId: string, razorpayOrderId: string) => void
+  setBackendOrder: (orderId: string, amountMinor: number, currency: string) => void
+  setRazorpayOrder: (razorpayOrderId: string) => void
   setLocalOrderId:  (orderId: string | null) => void
   setPayment:      (paymentId: string) => void
   setJobStatus:    (status: JobStatus, pagesCompleted: number) => void
@@ -89,6 +94,8 @@ const initial: SessionState = {
   phone:           '',
   totalPages:      0,
   totalCost:       0,
+  serverAmountMinor: null,
+  currency: 'INR',
   pricing:         DEFAULT_PRICING,
   orderId:         null,
   localOrderId:    null,
@@ -135,10 +142,10 @@ export const useSessionStore = create<SessionState & SessionActions>((set, get) 
 
   setKioskId: (id) => set({ kioskId: id }),
 
-  setPrinter: (id, name) => set({ selectedPrinterId: id, selectedPrinterName: name }),
+  setPrinter: (id, name) => set({ selectedPrinterId: id, selectedPrinterName: name, orderId: null, razorpayOrderId: null, serverAmountMinor: null }),
 
   setFile: (file, filePreviewUrl, parsedPageCount) => {
-    set({ file, filePreviewUrl, parsedPageCount })
+    set({ file, filePreviewUrl, parsedPageCount, orderId: null, razorpayOrderId: null, serverAmountMinor: null })
     // Re-compute cost with new page count
     const { printOptions, pricing } = get()
     const totalPages = computePages(parsedPageCount, printOptions)
@@ -151,7 +158,7 @@ export const useSessionStore = create<SessionState & SessionActions>((set, get) 
 
   setPrintOptions: (opts) => {
     const merged = { ...get().printOptions, ...opts }
-    set({ printOptions: merged })
+    set({ printOptions: merged, orderId: null, razorpayOrderId: null, serverAmountMinor: null })
     // Re-compute cost
     const { parsedPageCount, pricing } = get()
     const totalPages = computePages(parsedPageCount, merged)
@@ -180,7 +187,9 @@ export const useSessionStore = create<SessionState & SessionActions>((set, get) 
     set({ totalPages, totalCost: totalPages * pricePerPage })
   },
 
-  setOrder: (orderId, razorpayOrderId) => set({ orderId, razorpayOrderId }),
+  setBackendOrder: (orderId, serverAmountMinor, currency) => set({ orderId, serverAmountMinor, currency }),
+
+  setRazorpayOrder: (razorpayOrderId) => set({ razorpayOrderId }),
 
   setLocalOrderId: (localOrderId) => set({ localOrderId }),
 
@@ -197,4 +206,3 @@ export const useSessionStore = create<SessionState & SessionActions>((set, get) 
     set({ ...initial, pricing: get().pricing, kioskId: get().kioskId })
   },
 }))
-

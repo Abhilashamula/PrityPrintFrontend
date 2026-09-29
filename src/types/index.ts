@@ -4,9 +4,9 @@ export type ColorMode   = 'bw' | 'color'
 export type Orientation = 'portrait' | 'landscape'
 export type Sides       = 'single' | 'double'
 export type PageRange   = 'all' | 'custom'
-export type PaperSize   = 'A4' | 'A6'
+export type PaperSize   = string
 
-export const PAPER_DIMENSIONS_MM: Record<PaperSize, { width: number; height: number }> = {
+export const PAPER_DIMENSIONS_MM: Record<string, { width: number; height: number }> = {
   A4: { width: 210, height: 297 },
   A6: { width: 105, height: 148 },
 }
@@ -19,6 +19,8 @@ export interface PrintOptions {
   pageRange:       PageRange
   customPageRange: string   // e.g. "1-5, 8, 10-12"
   paperSize:       PaperSize
+  paperType:       string
+  mediaConfigId:   string | null
 }
 
 export interface PricingConfig {
@@ -78,4 +80,3 @@ export interface RazorpayInstance {
   open: () => void
   on:   (event: string, handler: () => void) => void
 }
-

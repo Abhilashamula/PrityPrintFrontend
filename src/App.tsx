@@ -1,5 +1,3 @@
-import AdminScreen     from './screens/AdminScreen'
-  <Route path="/admin"      element={<AdminScreen />} />
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { useEffect } from 'react'
 import { useSessionStore } from './store/sessionStore'
@@ -17,6 +15,7 @@ import DoneScreen       from './screens/DoneScreen'
 import ErrorScreen      from './screens/ErrorScreen'
 import SignupScreen     from './screens/SignupScreen'
 import LoginScreen      from './screens/LoginScreen'
+import AdminScreen      from './screens/AdminScreen'
 
 export default function App() {
   // Load pricing from DB once on mount
@@ -53,4 +52,3 @@ export default function App() {
     </BrowserRouter>
   )
 }
-

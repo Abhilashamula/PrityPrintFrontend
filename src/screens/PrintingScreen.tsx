@@ -3,34 +3,47 @@ import { useNavigate } from 'react-router-dom'
 import { Printer, CheckCircle2, AlertTriangle } from 'lucide-react'
 import Logo from '../components/Logo'
 import { useSessionStore } from '../store/sessionStore'
-import { startLocalPrintJob } from '../lib/localBackend'
+import { apiClient } from '../lib/apiClient'
 import type { JobStatus } from '../types'
 
-type SimPhase = Extract<JobStatus, 'queued' | 'printing' | 'done' | 'jammed' | 'failed'>
+type PrintPhase = Extract<JobStatus, 'queued' | 'printing' | 'done' | 'jammed' | 'failed'>
 
-function usePrinterJob(totalPages: number, orderId: string | null) {
+function mapStatus(orderStatus: string, printJobStatus: string): PrintPhase {
+  if (orderStatus === 'COMPLETED' || printJobStatus === 'COMPLETED') return 'done'
+  if (orderStatus === 'FAILED' || orderStatus === 'PRINT_FAILED' || printJobStatus === 'FAILED') return 'failed'
+  if (orderStatus === 'PRINTING' || printJobStatus === 'PRINTING' || printJobStatus === 'SUBMITTED' || printJobStatus === 'SUBMITTING') return 'printing'
+  return 'queued'
+}
+
+function usePrinterJob(orderId: string | null) {
   const setJobStatus = useSessionStore((s) => s.setJobStatus)
-  const [phase, setPhase] = useState<SimPhase>('queued')
+  const [phase, setPhase] = useState<PrintPhase>('queued')
   const [completed, setCompleted] = useState(0)
 
   useEffect(() => {
     if (!orderId) return
 
-    let job: { cancel: () => void }
-    try {
-      job = startLocalPrintJob(orderId, ({ status, pagesCompleted }) => {
-        setPhase(status)
-        setCompleted(pagesCompleted)
-        setJobStatus(status, pagesCompleted)
-      })
-    } catch {
-      setPhase('failed')
-      setJobStatus('failed', 0)
-      return
+    let cancelled = false
+    const poll = async () => {
+      try {
+        const status = await apiClient.printOrderStatus(orderId)
+        if (cancelled) return
+        const nextPhase = mapStatus(status.orderStatus, status.printJobStatus)
+        setPhase(nextPhase)
+        setCompleted(status.pagesCompleted)
+        setJobStatus(nextPhase, status.pagesCompleted)
+      } catch {
+        if (!cancelled) {
+          setPhase('failed')
+          setJobStatus('failed', 0)
+        }
+      }
     }
 
-    return job.cancel
-  }, [orderId, setJobStatus, totalPages])
+    void poll()
+    const interval = window.setInterval(() => void poll(), 2500)
+    return () => { cancelled = true; window.clearInterval(interval) }
+  }, [orderId, setJobStatus])
 
   return { phase, completed }
 }
@@ -66,11 +79,11 @@ function PrinterAnimation({ printing }: { printing: boolean }) {
 export default function PrintingScreen() {
   const navigate       = useNavigate()
   const paymentId      = useSessionStore((s) => s.paymentId)
-  const localOrderId   = useSessionStore((s) => s.localOrderId)
+  const orderId        = useSessionStore((s) => s.orderId)
   const totalPages     = useSessionStore((s) => s.totalPages)
   const file           = useSessionStore((s) => s.file)
 
-  const { phase, completed } = usePrinterJob(totalPages, localOrderId)
+  const { phase, completed } = usePrinterJob(orderId)
 
   // Guard: redirect if no payment
   useEffect(() => {
@@ -91,7 +104,7 @@ export default function PrintingScreen() {
 
   const progressPct = totalPages > 0 ? Math.round((completed / totalPages) * 100) : 0
 
-  const statusLabel: Record<SimPhase, string> = {
+  const statusLabel: Record<PrintPhase, string> = {
     queued:   'Sending to printer…',
     printing: `Printing page ${completed} of ${totalPages}…`,
     done:     'Printing complete!',

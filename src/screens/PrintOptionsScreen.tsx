@@ -25,6 +25,7 @@ import { validatePageRange } from '../lib/pageRangeParser'
 import ImageCropper from '../components/ImageCropper'
 import FilePreview from '../components/FilePreview'
 import AccountMenu from '../components/AccountMenu'
+import { apiClient, type PrinterCapabilities } from '../lib/apiClient'
 
 function OptionCard<T extends string>({
   value,
@@ -157,15 +158,47 @@ export default function PrintOptionsScreen() {
   const pricing = useSessionStore(
     (state) => state.pricing
   )
+  const selectedPrinterId = useSessionStore((state) => state.selectedPrinterId)
 
   const [rangeError, setRangeError] = useState<string | null>(null)
   const [isCropEditorOpen, setIsCropEditorOpen] = useState(true)
+  const [capabilities, setCapabilities] = useState<PrinterCapabilities | null>(null)
+  const [capabilityError, setCapabilityError] = useState<string | null>(null)
 
   useEffect(() => {
     if (!file) {
       navigate('/upload', { replace: true })
     }
   }, [file, navigate])
+
+  useEffect(() => {
+    if (!selectedPrinterId) return
+    let active = true
+    setCapabilityError(null)
+    void apiClient.printerCapabilities(selectedPrinterId).then((result) => {
+      if (!active) return
+      setCapabilities(result)
+      const first = result.mediaOptions[0]
+      if (first && !result.mediaOptions.some((item) => item.id === printOptions.mediaConfigId)) {
+        setPrintOptions({ mediaConfigId: first.id, paperSize: first.paperSize, paperType: first.paperType })
+      }
+    }).catch((error: unknown) => {
+      if (active) setCapabilityError(error instanceof Error ? error.message : 'Could not load printer options.')
+    })
+    return () => { active = false }
+  }, [selectedPrinterId, setPrintOptions])
+
+  const selectedMedia = capabilities?.mediaOptions.find((item) => item.id === printOptions.mediaConfigId)
+  const mediaOptions = capabilities?.mediaOptions ?? []
+  const paperSizes = [...new Map(mediaOptions.map((item) => [item.paperSize, item])).values()]
+  const paperTypes = mediaOptions.filter((item) => item.paperSize === printOptions.paperSize)
+  const colorSupported = selectedMedia?.colorModes.includes('COLOR') ?? false
+  const duplexSupported = selectedMedia?.duplexSupported ?? false
+
+  useEffect(() => {
+    if (selectedMedia && !colorSupported && printOptions.colorMode === 'color') setPrintOptions({ colorMode: 'bw' })
+    if (selectedMedia && !duplexSupported && printOptions.sides === 'double') setPrintOptions({ sides: 'single' })
+  }, [selectedMedia, colorSupported, duplexSupported, printOptions.colorMode, printOptions.sides, setPrintOptions])
 
   const updateOption = <
     K extends keyof typeof printOptions
@@ -488,25 +521,9 @@ export default function PrintOptionsScreen() {
                 Paper size
               </h2>
 
-              <div className="flex flex-col gap-4 sm:flex-row">
-                <OptionCard
-                  value="A4"
-                  current={printOptions.paperSize}
-                  onSelect={(value) => updateOption('paperSize', value)}
-                  label="A4"
-                  description="Fit document to 210 × 297 mm"
-                  icon={<FileText size={20} />}
-                />
+              {capabilityError ? <p className="border border-red-200 bg-red-50 p-4 text-sm text-red-700">{capabilityError}</p> : mediaOptions.length === 0 ? <p className="border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">No configured media is available for this printer.</p> : <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap">{paperSizes.map((media) => <OptionCard key={media.paperSize} value={media.paperSize} current={printOptions.paperSize} onSelect={(value) => { const next = mediaOptions.find((item) => item.paperSize === value); updateOption('paperSize', value); if (next) updateOption('paperType', next.paperType); if (next) updateOption('mediaConfigId', next.id) }} label={media.paperSize} description={`${media.paperType} media`} icon={<FileText size={20} />} />)}</div>}
 
-                <OptionCard
-                  value="A6"
-                  current={printOptions.paperSize}
-                  onSelect={(value) => updateOption('paperSize', value)}
-                  label="A6"
-                  description="Fit document to 105 × 148 mm"
-                  icon={<FileText size={20} />}
-                />
-              </div>
+              {paperTypes.length > 1 && <div className="mt-4 flex flex-wrap gap-3">{paperTypes.map((media) => <button key={media.id} type="button" onClick={() => updateOption('mediaConfigId', media.id)} className={`border px-4 py-3 text-left text-sm font-bold ${media.id === printOptions.mediaConfigId ? 'border-lux-ink bg-lux-ink text-white' : 'border-lux-ink/15 bg-white'}`}><span className="block">{media.paperType}</span><span className="text-xs opacity-60">{media.colorModes.includes('COLOR') ? 'B&W + Color' : 'B&W only'}</span></button>)}</div>}
 
               <p className="mt-3 text-xs leading-5 text-lux-ink/45">
                 The document will be scaled to fit the selected paper without cropping.
@@ -597,7 +614,7 @@ export default function PrintOptionsScreen() {
                       value
                     )
                   }
-                  label={`Color · ₹${pricing.colorPerPage}/page`}
+                  label={`Color · ₹${selectedMedia ? (selectedMedia.priceColorMinor / 100).toFixed(2) : pricing.colorPerPage}/page`}
                   description="Bring ideas to life"
                   icon={
                     <span className="h-5 w-5 rounded-full bg-gradient-to-br from-lux-copper via-pink-400 to-amber-300" />

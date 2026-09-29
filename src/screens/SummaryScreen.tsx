@@ -5,7 +5,6 @@ import FilePreview from '../components/FilePreview'
 import SupportContact from '../components/SupportContact'
 import { useSessionStore } from '../store/sessionStore'
 import { useKioskStatus } from '../hooks/useKioskStatus'
-import { createLocalOrder } from '../lib/localBackend'
 import { PAPER_DIMENSIONS_MM } from '../types'
 import AccountMenu from '../components/AccountMenu'
 import { apiClient } from '../lib/apiClient'
@@ -22,8 +21,8 @@ export default function SummaryScreen() {
   const phone         = useSessionStore((s) => s.phone)
   const selectedPrinterId = useSessionStore((s) => s.selectedPrinterId)
   const setPhone      = useSessionStore((s) => s.setPhone)
-  const setOrder      = useSessionStore((s) => s.setOrder)
-  const setLocalOrderId = useSessionStore((s) => s.setLocalOrderId)
+  const setBackendOrder = useSessionStore((s) => s.setBackendOrder)
+  const setRazorpayOrder = useSessionStore((s) => s.setRazorpayOrder)
   const documentId = useSessionStore((s) => s.documentId)
 
   const { isPaperOut } = useKioskStatus()
@@ -44,29 +43,21 @@ export default function SummaryScreen() {
     setOrderError(null)
     try {
       if (!documentId) throw new Error('Please upload the document again before continuing.')
-      const localOrder = createLocalOrder({
-        kioskId: useSessionStore.getState().kioskId,
-        printerId: selectedPrinterId,
-        fileName: file.name,
-        totalPages,
-        totalCost,
-        paperSize: printOptions.paperSize,
-        paperWidthMm: PAPER_DIMENSIONS_MM[printOptions.paperSize].width,
-        paperHeightMm: PAPER_DIMENSIONS_MM[printOptions.paperSize].height,
-      })
       const order = await apiClient.createPrintOrder({
         printerId: selectedPrinterId,
         documentId,
+        mediaConfigId: printOptions.mediaConfigId,
         copies: printOptions.copies,
         paperSize: printOptions.paperSize,
         paperType: 'PLAIN',
         colorMode: printOptions.colorMode === 'color' ? 'COLOR' : 'BW',
         duplex: printOptions.sides === 'double',
         orientation: printOptions.orientation.toUpperCase(),
+        pageRange: printOptions.pageRange === 'all' ? null : printOptions.customPageRange,
       })
       const razorpayOrder = await apiClient.createRazorpayOrderForPrint(order.id)
-      setLocalOrderId(localOrder.id)
-      setOrder(order.id, razorpayOrder.id)
+      setBackendOrder(order.id, order.amountMinor, order.currency)
+      setRazorpayOrder(razorpayOrder.id)
       navigate('/pay')
     } catch (error) {
       setLoading(false)
@@ -84,7 +75,7 @@ export default function SummaryScreen() {
     ['Page range',  printOptions.pageRange === 'all'
                       ? `All ${parsedPageCount} pages`
                       : printOptions.customPageRange || '—'],
-    ['Paper size',  `${printOptions.paperSize} · ${PAPER_DIMENSIONS_MM[printOptions.paperSize].width} × ${PAPER_DIMENSIONS_MM[printOptions.paperSize].height} mm`],
+    ['Paper size',  `${printOptions.paperSize} · ${PAPER_DIMENSIONS_MM[printOptions.paperSize]?.width ?? '?'} × ${PAPER_DIMENSIONS_MM[printOptions.paperSize]?.height ?? '?'} mm`],
   ]
 
   return (
