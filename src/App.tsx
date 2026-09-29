@@ -1,21 +1,21 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
-import { useEffect } from 'react'
+import { lazy, Suspense, useEffect } from 'react'
 import { useSessionStore } from './store/sessionStore'
 import { usePricing } from './hooks/usePricing'
 import KioskStatusBanner from './components/KioskStatusBanner'
 
 // Screens
-import WelcomeScreen    from './screens/WelcomeScreen'
-import UploadScreen     from './screens/UploadScreen'
-import PrintOptionsScreen from './screens/PrintOptionsScreen'
-import SummaryScreen    from './screens/SummaryScreen'
-import PaymentScreen    from './screens/PaymentScreen'
-import PrintingScreen   from './screens/PrintingScreen'
-import DoneScreen       from './screens/DoneScreen'
-import ErrorScreen      from './screens/ErrorScreen'
-import SignupScreen     from './screens/SignupScreen'
-import LoginScreen      from './screens/LoginScreen'
-import AdminScreen      from './screens/AdminScreen'
+const WelcomeScreen = lazy(() => import('./screens/WelcomeScreen'))
+const UploadScreen = lazy(() => import('./screens/UploadScreen'))
+const PrintOptionsScreen = lazy(() => import('./screens/PrintOptionsScreen'))
+const SummaryScreen = lazy(() => import('./screens/SummaryScreen'))
+const PaymentScreen = lazy(() => import('./screens/PaymentScreen'))
+const PrintingScreen = lazy(() => import('./screens/PrintingScreen'))
+const DoneScreen = lazy(() => import('./screens/DoneScreen'))
+const ErrorScreen = lazy(() => import('./screens/ErrorScreen'))
+const SignupScreen = lazy(() => import('./screens/SignupScreen'))
+const LoginScreen = lazy(() => import('./screens/LoginScreen'))
+const AdminScreen = lazy(() => import('./screens/AdminScreen'))
 
 export default function App() {
   // Load pricing from DB once on mount
@@ -34,7 +34,7 @@ export default function App() {
       {/* Global status banner — appears at the top when paper is low/out */}
       <KioskStatusBanner />
 
-      <Routes>
+      <Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-lux-paper text-sm font-bold">Loading Ping &amp; Print...</div>}><Routes>
         <Route path="/"          element={<WelcomeScreen />} />
         <Route path="/upload"    element={<UploadScreen />} />
         <Route path="/options"   element={<PrintOptionsScreen />} />
@@ -48,7 +48,7 @@ export default function App() {
         <Route path="/admin"     element={<AdminScreen />} />
         {/* Catch-all back to home */}
         <Route path="*"          element={<Navigate to="/" replace />} />
-      </Routes>
+      </Routes></Suspense>
     </BrowserRouter>
   )
 }

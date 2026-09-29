@@ -178,6 +178,8 @@ export default function PrintOptionsScreen() {
     void apiClient.printerCapabilities(selectedPrinterId).then((result) => {
       if (!active) return
       setCapabilities(result)
+      if (!result.pageRangeSupported && printOptions.pageRange !== 'all') setPrintOptions({ pageRange: 'all', customPageRange: '' })
+      if (!result.landscapeSupported && printOptions.orientation !== 'portrait') setPrintOptions({ orientation: 'portrait' })
       const first = result.mediaOptions[0]
       if (first && !result.mediaOptions.some((item) => item.id === printOptions.mediaConfigId)) {
         setPrintOptions({ mediaConfigId: first.id, paperSize: first.paperSize, paperType: first.paperType })
@@ -496,7 +498,7 @@ export default function PrintOptionsScreen() {
                   }
                 />
 
-                <OptionCard
+                {capabilities?.landscapeSupported && <OptionCard
                   value="landscape"
                   current={printOptions.orientation}
                   onSelect={(value) =>
@@ -510,7 +512,7 @@ export default function PrintOptionsScreen() {
                   icon={
                     <LayoutTemplate size={20} />
                   }
-                />
+                />}
               </div>
             </section>
 
@@ -671,7 +673,7 @@ export default function PrintOptionsScreen() {
 
               </div>
 
-              {printOptions.pageRange ===
+              {capabilities?.pageRangeSupported && printOptions.pageRange ===
                 'custom' && (
                 <div className="mt-5">
 

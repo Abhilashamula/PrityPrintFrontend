@@ -107,7 +107,7 @@ export default function PrintingScreen() {
   const statusLabel: Record<PrintPhase, string> = {
     queued:   'Sending to printer…',
     printing: `Printing page ${completed} of ${totalPages}…`,
-    done:     'Printing complete!',
+    done:     'Printer service reports the job completed.',
     jammed:   'Paper jam detected',
     failed:   'Printer is unavailable',
   }
@@ -124,7 +124,7 @@ export default function PrintingScreen() {
         {/* Status */}
         <div>
           <h1 className="text-3xl font-black text-pp-dark">
-            {phase === 'done'   ? '✅ Done!'
+            {phase === 'done'   ? 'Job completed'
             : phase === 'jammed' ? '⚠️ Jam Detected'
             : phase === 'failed' ? '⚠️ Printer Unavailable'
             : 'Printing in Progress'}

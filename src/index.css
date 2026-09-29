@@ -12,7 +12,6 @@
     @apply bg-pp-bg font-sans text-pp-dark antialiased;
     -webkit-tap-highlight-color: transparent;
     touch-action: manipulation;
-    user-select: none;
   }
 
   /* Allow selection inside inputs */
@@ -39,6 +38,10 @@
   .touch-target {
     min-height: 48px;
     min-width: 48px;
+  }
+
+  .safe-bottom {
+    padding-bottom: calc(1rem + env(safe-area-inset-bottom));
   }
 
   /* Screen transitions */
@@ -129,4 +132,3 @@
   background: #6BBDD4;
   border-radius: 3px;
 }
-

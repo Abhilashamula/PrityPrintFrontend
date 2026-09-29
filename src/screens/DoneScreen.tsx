@@ -55,10 +55,9 @@ export default function DoneScreen() {
 
         {/* Message */}
         <div>
-          <h1 className="text-4xl font-black text-pp-dark">Your prints are ready!</h1>
+          <h1 className="text-4xl font-black text-pp-dark">Print job completed</h1>
           <p className="text-xl text-pp-gray mt-3">
-            Please collect your document from the{' '}
-            <strong className="text-pp-dark">output tray</strong> below the printer.
+            Epson Connect reports this job as completed. Please check the selected printer&apos;s output tray.
           </p>
         </div>
 

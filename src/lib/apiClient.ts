@@ -39,19 +39,68 @@ export interface PrinterMediaOption {
 export interface PrinterCapabilities {
   printerId: string
   available: boolean
+  pageRangeSupported: boolean
+  landscapeSupported: boolean
   mediaOptions: PrinterMediaOption[]
 }
 
-let accessToken: string | null = null
+export interface AdminPrinter {
+  id: string
+  name: string
+  location: string
+  status: string
+  active: boolean
+  provider: 'EPSON_CONNECT' | 'LOCAL_AGENT' | string
+  manufacturer: string | null
+  model: string | null
+  connectionState: string
+  archived: boolean
+}
 
-async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
+export interface AdminTransaction {
+  transaction_id: string; order_id: string; razorpay_order_id: string | null; razorpay_payment_id: string | null
+  student_name: string; student_email: string | null; printer_id: string; printer_name: string; printer_location: string
+  amount_minor: number; currency: string; payment_status: string; order_status: string; print_status: string
+  created_at: string; paid_at: string | null; failure_reason: string | null; print_job_id: string | null
+  file_name?: string; total_pages?: number; copies?: number; paper_size?: string; paper_type?: string; color_mode?: string
+}
+export interface PageResult<T> { items: T[]; page: number; size: number; total: number; totalPages: number }
+export interface AdminDashboard {
+  total_orders: number; successful_payments: number; revenue_minor: number
+  queued_jobs: number; failed_jobs: number; active_printers: number
+}
+
+export interface SupportedMedia {
+  paperSource: string
+  paperSize: string
+  paperType: string
+  printQuality: string
+  borderless: boolean
+  duplexSupported: boolean
+  colorSupported: boolean
+  monoSupported: boolean
+}
+
+export interface AdminMediaConfig extends SupportedMedia {
+  id: string | null
+  enabled: boolean
+  priceBwMinor: number
+  priceColorMinor: number
+}
+
+let accessToken: string | null = sessionStorage.getItem('pingprint_access_token')
+let adminToken: string | null = sessionStorage.getItem('pingprint_admin_token')
+
+async function request<T>(path: string, options: RequestInit = {}, token: string | null = accessToken): Promise<T> {
   const headers = new Headers(options.headers)
   headers.set('Content-Type', 'application/json')
-  if (accessToken) headers.set('Authorization', `Bearer ${accessToken}`)
+  if (token) headers.set('Authorization', `Bearer ${token}`)
 
-  const response = await fetch(`${API_URL}${path}`, { ...options, headers })
+  let response: Response
+  try { response = await fetch(`${API_URL}${path}`, { ...options, headers }) }
+  catch { throw new ApiError('Could not connect to the Ping & Print server.', 'SERVER_UNAVAILABLE', 0) }
   const body = await response.json().catch(() => ({}))
-  if (!response.ok) throw new Error(body.error ?? 'The server request failed.')
+  if (!response.ok) throw new ApiError(body.message ?? body.error ?? 'The server request failed.', body.code ?? 'REQUEST_FAILED', response.status)
   return body as T
 }
 
@@ -67,15 +116,19 @@ async function upload<T>(path: string, file: File): Promise<T> {
     response = await fetch(`${API_URL}${path}`, { method: 'POST', headers, body: form, signal: controller.signal })
   } catch (error) {
     if (error instanceof DOMException && error.name === 'AbortError') {
-      throw new Error('The upload took too long. Please try a smaller or simpler document.')
+      throw new ApiError('The upload took too long. Please try a smaller or simpler document.', 'UPLOAD_TIMEOUT', 0)
     }
-    throw new Error('Could not connect to the print server.')
+    throw new ApiError('Could not connect to the print server.', 'SERVER_UNAVAILABLE', 0)
   } finally {
     window.clearTimeout(timeout)
   }
   const body = await response.json().catch(() => ({}))
-  if (!response.ok) throw new Error(body.error ?? 'The upload failed.')
+  if (!response.ok) throw new ApiError(body.message ?? body.error ?? 'The upload failed.', body.code ?? 'UPLOAD_FAILED', response.status)
   return body as T
+}
+
+export class ApiError extends Error {
+  constructor(message: string, public readonly code: string, public readonly status: number) { super(message) }
 }
 
 export const apiClient = {
@@ -172,36 +225,87 @@ export const apiClient = {
     })
   },
   adminPrinters() {
-    return request<Array<{ id: string; name: string; location: string; status: string }>>('/admin/printers')
+    return adminRequest<AdminPrinter[]>('/admin/printers')
   },
-  adminAddPrinter(details: { name: string; location: string; agentKey: string }) {
-    return request<{ id: string; name: string; location: string; status: string; agentKey: string }>('/admin/printers', {
+  adminAddPrinter(details: { name: string; location: string; provider: string; agentKey?: string }) {
+    return adminRequest<AdminPrinter>('/admin/printers', {
       method: 'POST',
       body: JSON.stringify(details),
     })
   },
+  adminUpdatePrinter(id: string, details: { name: string; location: string; active: boolean }) {
+    return adminRequest<AdminPrinter>(`/admin/printers/${id}`, { method: 'PUT', body: JSON.stringify(details) })
+  },
   adminUpdatePrinterStatus(id: string, status: string) {
-    return request<{ id: string; status: string }>(`/admin/printers/${id}/status`, {
+    return adminRequest<{ id: string; status: string }>(`/admin/printers/${id}/status`, {
       method: 'PUT',
       body: JSON.stringify({ status }),
     })
   },
   adminReport() {
-    return request<{ totals: { orders: number; collected_minor: number; refunded_minor: number }; transactions: Array<Record<string, unknown>> }>('/admin/report')
+    return adminRequest<{ totals: { orders: number; collected_minor: number; refunded_minor: number }; transactions: Array<Record<string, unknown>> }>('/admin/report')
+  },
+  adminDashboard() {
+    return adminRequest<AdminDashboard>('/admin/dashboard')
+  },
+  adminTransactions(params: Record<string, string | number | undefined>) {
+    const query = new URLSearchParams()
+    Object.entries(params).forEach(([key, value]) => { if (value !== undefined && value !== '') query.set(key, String(value)) })
+    return adminRequest<PageResult<AdminTransaction>>(`/admin/transactions?${query}`)
+  },
+  adminTransaction(id: string) {
+    return adminRequest<AdminTransaction>(`/admin/transactions/${id}`)
+  },
+  adminPrinterJobs(id: string, page = 0) {
+    return adminRequest<PageResult<Record<string, unknown>>>(`/admin/printers/${id}/jobs?page=${page}&size=20`)
+  },
+  adminArchivePrinter(id: string) {
+    return adminRequest<AdminPrinter>(`/admin/printers/${id}/archive`, { method: 'POST' })
+  },
+  adminTestPrint(id: string) {
+    return adminRequest<{ jobId: string; status: string; message: string }>(`/admin/printers/${id}/test-print`, { method: 'POST' })
   },
   adminPricing() {
-    return request<{ price_bw_minor: number; price_color_minor: number; max_file_mb: number }>('/admin/pricing')
+    return adminRequest<{ price_bw_minor: number; price_color_minor: number; max_file_mb: number }>('/admin/pricing')
   },
   adminUpdatePricing(details: { priceBwMinor: number; priceColorMinor: number; maxFileMb: number }) {
-    return request<{ price_bw_minor: number; price_color_minor: number; max_file_mb: number }>('/admin/pricing', {
+    return adminRequest<{ price_bw_minor: number; price_color_minor: number; max_file_mb: number }>('/admin/pricing', {
       method: 'PUT',
       body: JSON.stringify(details),
     })
   },
   logout() {
     accessToken = null
+    sessionStorage.removeItem('pingprint_access_token')
+  },
+  adminEpsonConnect(id: string) {
+    return adminRequest<{ authorizationUrl: string }>(`/admin/printers/${id}/epson/connect`)
+  },
+  adminEpsonTest(id: string) {
+    return adminRequest<{ reachable: boolean; connected: boolean; productName: string }>(`/admin/printers/${id}/epson/test`, { method: 'POST' })
+  },
+  adminRefreshEpsonCapabilities(id: string) {
+    return adminRequest<{ refreshed: boolean }>(`/admin/printers/${id}/epson/capabilities/refresh`, { method: 'POST' })
+  },
+  adminSupportedMedia(id: string) {
+    return adminRequest<SupportedMedia[]>(`/admin/printers/${id}/supported-media`)
+  },
+  adminMedia(id: string) {
+    return adminRequest<AdminMediaConfig[]>(`/admin/printers/${id}/media`)
+  },
+  adminConfigureMedia(id: string, details: AdminMediaConfig) {
+    return adminRequest<AdminMediaConfig>(`/admin/printers/${id}/media`, { method: 'PUT', body: JSON.stringify(details) })
   },
   setAccessToken(token: string) {
     accessToken = token
+    sessionStorage.setItem('pingprint_access_token', token)
   },
+  setAdminAccessToken(token: string) {
+    adminToken = token
+    sessionStorage.setItem('pingprint_admin_token', token)
+  },
+}
+
+function adminRequest<T>(path: string, options: RequestInit = {}) {
+  return request<T>(path, options, adminToken)
 }

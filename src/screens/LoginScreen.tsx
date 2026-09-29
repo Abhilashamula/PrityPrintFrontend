@@ -20,7 +20,6 @@ export default function LoginScreen() {
       if (email.trim().toLowerCase() === 'admin' && password === 'admin') {
         const result = await apiClient.adminLogin('admin', 'admin')
         apiClient.setAccessToken(result.accessToken)
-        sessionStorage.setItem('pingprint_admin_token', result.accessToken)
         navigate('/admin')
         return
       }
