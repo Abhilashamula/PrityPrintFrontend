@@ -158,6 +158,7 @@ export default function PrintOptionsScreen() {
   const pricing = useSessionStore(
     (state) => state.pricing
   )
+  const setPricing = useSessionStore((state) => state.setPricing)
   const selectedPrinterId = useSessionStore((state) => state.selectedPrinterId)
 
   const [rangeError, setRangeError] = useState<string | null>(null)
@@ -201,6 +202,15 @@ export default function PrintOptionsScreen() {
     if (selectedMedia && !colorSupported && printOptions.colorMode === 'color') setPrintOptions({ colorMode: 'bw' })
     if (selectedMedia && !duplexSupported && printOptions.sides === 'double') setPrintOptions({ sides: 'single' })
   }, [selectedMedia, colorSupported, duplexSupported, printOptions.colorMode, printOptions.sides, setPrintOptions])
+
+  useEffect(() => {
+    if (!selectedMedia) return
+    setPricing({
+      ...pricing,
+      bwPerPage: selectedMedia.priceBwMinor / 100,
+      colorPerPage: selectedMedia.priceColorMinor / 100,
+    })
+  }, [selectedMedia?.id, selectedMedia?.priceBwMinor, selectedMedia?.priceColorMinor, setPricing])
 
   const updateOption = <
     K extends keyof typeof printOptions

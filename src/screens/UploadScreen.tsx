@@ -72,6 +72,8 @@ export default function UploadScreen() {
       } else if (['jpg','jpeg','png'].includes(ext)) {
         previewUrl  = URL.createObjectURL(file)
         pageCount   = 1
+      } else {
+        pageCount = 0
       }
       // Images represent one printable page; PDFs are counted by the parser.
 
@@ -140,7 +142,7 @@ export default function UploadScreen() {
       {/* Body */}
       <div className="flex-1 flex flex-col items-center px-6 py-12 max-w-5xl mx-auto w-full gap-8 lg:py-16">
         <div className="w-full flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
-          <div><p className="mb-3 text-xs font-extrabold uppercase tracking-[0.25em] text-lux-copper">Step 01 / Start here</p><h1 className="font-display text-5xl font-semibold leading-none text-lux-ink sm:text-6xl">Bring your work<br /><em className="text-lux-copper">to life.</em></h1><p className="mt-4 text-sm text-lux-ink/60">PDF, JPG, PNG · up to {pricing.maxFileMb} MB</p>{selectedPrinterName && <div className="mt-4 inline-flex max-w-full items-center gap-2 border border-lux-copper/30 bg-white px-3 py-2 text-xs font-bold text-lux-ink"><MapPin size={14} className="shrink-0 text-lux-copper" /><span className="truncate">Printing at {selectedPrinterName}</span></div>}</div>
+          <div><p className="mb-3 text-xs font-extrabold uppercase tracking-[0.25em] text-lux-copper">Step 01 / Start here</p><h1 className="font-display text-5xl font-semibold leading-none text-lux-ink sm:text-6xl">Bring your work<br /><em className="text-lux-copper">to life.</em></h1><p className="mt-4 text-sm text-lux-ink/60">PDF, Office, OpenDocument, images and TIFF · up to {pricing.maxFileMb} MB</p>{selectedPrinterName && <div className="mt-4 inline-flex max-w-full items-center gap-2 border border-lux-copper/30 bg-white px-3 py-2 text-xs font-bold text-lux-ink"><MapPin size={14} className="shrink-0 text-lux-copper" /><span className="truncate">Printing at {selectedPrinterName}</span></div>}</div>
           <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.1em] text-lux-ink/55"><LockKeyhole size={16} className="text-lux-copper" /> Deleted after printing</div>
         </div>
 
@@ -190,7 +192,7 @@ export default function UploadScreen() {
                   Choose file <ArrowRight size={16} className="ml-2 inline" />
                 </button>
                 <div className="flex flex-wrap gap-2 justify-center mt-2">
-                  {['PDF', 'JPG', 'PNG'].map((t) => (
+                  {['PDF', 'DOCX', 'PPTX', 'XLSX', 'TIFF', 'JPG / PNG'].map((t) => (
                     <span key={t} className="border border-lux-ink/10 bg-lux-paper px-3 py-1.5 text-[10px] text-lux-ink/60 font-extrabold tracking-[0.12em]">
                       {t}
                     </span>
@@ -248,4 +250,3 @@ export default function UploadScreen() {
     </div>
   )
 }
-

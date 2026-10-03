@@ -50,6 +50,11 @@ export default function FilePreview({ file, previewUrl, parsedPageCount }: FileP
             {parsedPageCount} {parsedPageCount === 1 ? 'page' : 'pages'}
           </span>
         )}
+        {parsedPageCount === 0 && (
+          <span className="absolute bottom-3 right-3 bg-lux-ink px-3 py-1.5 text-xs font-semibold text-white">
+            Pages verified after upload
+          </span>
+        )}
       </div>
 
       {/* File meta */}
@@ -63,4 +68,3 @@ export default function FilePreview({ file, previewUrl, parsedPageCount }: FileP
     </div>
   )
 }
-

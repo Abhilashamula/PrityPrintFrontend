@@ -80,6 +80,10 @@
   .welcome-hero__registration--two { left: 8%; bottom: 16%; transform: scale(0.55); animation-delay: -2s; }
 
   .perspective-stage { perspective: 1400px; }
+  .hero-copy { animation: hero-copy-in 700ms cubic-bezier(.2,.8,.2,1) both; }
+  .scene-enter { animation: scene-enter 850ms 120ms cubic-bezier(.2,.8,.2,1) both; }
+  .motion-card { transition: transform 240ms ease, box-shadow 240ms ease; }
+  .motion-card:hover { transform: translateY(-6px); box-shadow: 0 16px 32px rgba(23,33,31,0.09); }
   .print-capsule { transform: rotateY(-15deg) rotateX(7deg) rotateZ(2deg); transform-style: preserve-3d; box-shadow: 32px 36px 0 rgba(23, 33, 31, 0.11), 0 34px 60px rgba(23, 33, 31, 0.24); }
   .print-capsule::before { content: ''; position: absolute; inset: 14px -18px -14px 16px; border: 1px solid rgba(199, 121, 82, 0.7); transform: translateZ(-28px); background: #c77952; }
   .paper-sheet { transform: translateZ(35px) rotateZ(-3deg); box-shadow: 15px 20px 25px rgba(23, 33, 31, 0.12); }
@@ -111,6 +115,15 @@
   @keyframes phone-glow { 0%, 100% { box-shadow: 0 0 0 rgba(107,189,212,0); } 50% { box-shadow: 0 0 16px rgba(107,189,212,0.65); } }
   @keyframes paper-drift { 0%, 100% { margin-top: 0; opacity: 0.42; } 50% { margin-top: -10px; opacity: 0.7; } }
   @keyframes registration-pulse { 0%, 100% { opacity: 0.35; transform: scale(1) rotate(0deg); } 50% { opacity: 0.8; transform: scale(1.08) rotate(10deg); } }
+  @keyframes hero-copy-in { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes scene-enter { from { opacity: 0; transform: translateY(24px) scale(.96); } to { opacity: 1; transform: translateY(0) scale(1); } }
+
+  @media (max-width: 420px) {
+    .printer-scene__printer { transform: translateX(-50%) rotateY(-12deg) scale(.84); transform-origin: bottom center; }
+    .printer-scene__person { transform: scale(.82); transform-origin: bottom center; }
+    @keyframes printer-float { 0%, 100% { transform: translateX(-50%) rotateY(-12deg) scale(.84) translateY(0); } 50% { transform: translateX(-50%) rotateY(-12deg) scale(.84) translateY(-7px); } }
+    @keyframes person-breathe { 0%, 100% { transform: scale(.82) translateY(0); } 50% { transform: scale(.82) translateY(-4px); } }
+  }
 
   .screen-enter > div:first-child {
     box-shadow: 0 1px 0 rgba(23, 33, 31, 0.08);

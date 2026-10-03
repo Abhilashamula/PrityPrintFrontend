@@ -1,19 +1,22 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Archive,
+  Download,
   ChevronLeft,
   ChevronRight,
   Gauge,
   Link2,
+  LogOut,
   ListChecks,
   LockKeyhole,
   Menu,
-  Plus,
   Printer,
   RefreshCw,
   Search,
   Send,
   Settings,
+  House,
   X,
 } from "lucide-react";
 import {
@@ -53,6 +56,7 @@ const emptyMedia: AdminMediaConfig = {
 };
 
 export default function AdminScreen() {
+  const navigate = useNavigate();
   const toast = useToast();
   const [token, setToken] = useState(() =>
     sessionStorage.getItem("pingprint_admin_token"),
@@ -74,6 +78,7 @@ export default function AdminScreen() {
     printerId: "",
     from: "",
     to: "",
+    includeArchived: "",
     page: 0,
   });
   const [selectedTransaction, setSelectedTransaction] =
@@ -88,8 +93,20 @@ export default function AdminScreen() {
     provider: "EPSON_CONNECT",
   });
   const [confirm, setConfirm] = useState<{
-    kind: "disable" | "archive";
+    kind: "disable";
     printer: AdminPrinter;
+  } | {
+    kind: "archive";
+    printer: AdminPrinter;
+  } | {
+    kind: "refund";
+    transaction: AdminTransaction;
+  } | {
+    kind: "archiveTransaction";
+    transaction: AdminTransaction;
+  } | {
+    kind: "restoreTransaction";
+    transaction: AdminTransaction;
   } | null>(null);
 
   const fail = useCallback(
@@ -100,6 +117,16 @@ export default function AdminScreen() {
   useEffect(() => {
     if (token) apiClient.setAdminAccessToken(token);
   }, [token]);
+  useEffect(() => {
+    const expired = () => {
+      apiClient.clearAdminAccessToken();
+      setToken(null);
+      toast.push("Your admin session expired. Please sign in again.", "warning");
+    };
+    window.addEventListener("pingprint:admin-session-expired", expired);
+    return () =>
+      window.removeEventListener("pingprint:admin-session-expired", expired);
+  }, [toast]);
 
   const loadBase = useCallback(async () => {
     if (!token) return;
@@ -120,6 +147,20 @@ export default function AdminScreen() {
   useEffect(() => {
     void loadBase();
   }, [loadBase]);
+
+  useEffect(() => {
+    if (!token) return;
+    const params = new URLSearchParams(window.location.search);
+    const result = params.get("epson");
+    if (!result) return;
+    if (result === "connected") {
+      toast.push("Epson printer connected. Configure its loaded media next.", "success");
+      setView("printers");
+    } else {
+      toast.push(params.get("message") || "Epson authorization failed.", "error");
+    }
+    window.history.replaceState({}, "", "/admin");
+  }, [token, toast]);
 
   const loadTransactions = useCallback(async () => {
     if (!token) return;
@@ -155,10 +196,11 @@ export default function AdminScreen() {
   async function addPrinter(event: React.FormEvent) {
     event.preventDefault();
     try {
-      await apiClient.adminAddPrinter(addForm);
+      const printer = await apiClient.adminAddPrinter(addForm);
       setAddForm({ name: "", location: "", provider: "EPSON_CONNECT" });
-      toast.push("Printer added successfully.", "success");
-      await loadBase();
+      toast.push("Printer record created. Continue in Epson to authorize the physical printer.", "success");
+      const { authorizationUrl } = await apiClient.adminEpsonConnect(printer.id);
+      window.location.assign(authorizationUrl);
     } catch (cause) {
       fail(cause, "Unable to add printer.");
     }
@@ -192,7 +234,22 @@ export default function AdminScreen() {
   async function performConfirmed() {
     if (!confirm) return;
     try {
-      if (confirm.kind === "archive") {
+      if (confirm.kind === "refund") {
+        const result = await apiClient.adminRefundTransaction(confirm.transaction.transaction_id, confirm.transaction.failure_reason || "Print job failed");
+        toast.push(
+          result.refundStatus === "FAILED" ? "Razorpay rejected the refund request. Review the transaction and retry after resolving the cause." : "Refund request submitted to Razorpay.",
+          result.refundStatus === "FAILED" ? "error" : "success",
+        );
+        setSelectedTransaction(await apiClient.adminTransaction(confirm.transaction.transaction_id));
+        await loadTransactions();
+      } else if (confirm.kind === "archiveTransaction" || confirm.kind === "restoreTransaction") {
+        const restoring = confirm.kind === "restoreTransaction";
+        if (restoring) await apiClient.adminRestoreTransaction(confirm.transaction.transaction_id);
+        else await apiClient.adminArchiveTransaction(confirm.transaction.transaction_id);
+        toast.push(restoring ? "Transaction restored." : "Transaction archived.", "success");
+        setSelectedTransaction(null);
+        await loadTransactions();
+      } else if (confirm.kind === "archive") {
         await apiClient.adminArchivePrinter(confirm.printer.id);
         toast.push("Printer archived.", "success");
       } else {
@@ -203,8 +260,10 @@ export default function AdminScreen() {
         });
         toast.push("Printer disabled.", "success");
       }
-      setSelected(null);
-      await loadBase();
+      if (confirm.kind === "archive" || confirm.kind === "disable") {
+        setSelected(null);
+        await loadBase();
+      }
     } catch (cause) {
       fail(cause, "Unable to update printer.");
     } finally {
@@ -215,6 +274,10 @@ export default function AdminScreen() {
   if (!token)
     return (
       <main className="flex min-h-screen items-center justify-center bg-lux-paper px-4">
+        <div className="w-full max-w-md">
+        <button onClick={() => navigate("/")} className="mb-4 flex min-h-11 items-center gap-2 text-sm font-bold text-lux-ink/65 hover:text-lux-copper">
+          <House size={17} /> Welcome page
+        </button>
         <form
           onSubmit={login}
           className="w-full max-w-md border bg-white p-7 shadow-lg"
@@ -253,6 +316,7 @@ export default function AdminScreen() {
             {loading ? "Signing in..." : "Sign in"}
           </button>
         </form>
+        </div>
       </main>
     );
 
@@ -281,6 +345,14 @@ export default function AdminScreen() {
           </button>
         ),
       )}
+      <div className="mt-8 border-t border-white/15 pt-4">
+        <button onClick={() => navigate("/")} className="flex min-h-11 w-full items-center gap-3 px-4 text-left text-sm font-bold text-white/65 hover:text-white">
+          <House size={18} /> Welcome page
+        </button>
+        <button onClick={() => { apiClient.clearAdminAccessToken(); setToken(null); navigate("/"); }} className="flex min-h-11 w-full items-center gap-3 px-4 text-left text-sm font-bold text-white/65 hover:text-white">
+          <LogOut size={18} /> Log out
+        </button>
+      </div>
     </>
   );
   return (
@@ -347,6 +419,19 @@ export default function AdminScreen() {
                   fail(cause, "Unable to load transaction.");
                 }
               }}
+              onExport={async () => {
+                try {
+                  const blob = await apiClient.adminExportTransactions();
+                  const url = URL.createObjectURL(blob);
+                  const link = document.createElement("a");
+                  link.href = url;
+                  link.download = `ping-print-transactions-${new Date().toISOString().slice(0, 10)}.csv`;
+                  link.click();
+                  URL.revokeObjectURL(url);
+                } catch (cause) {
+                  fail(cause, "Unable to export transactions.");
+                }
+              }}
             />
           ) : view === "settings" ? (
             <AdminPricingPanel />
@@ -399,17 +484,29 @@ export default function AdminScreen() {
       <ConfirmDialog
         open={!!confirm}
         title={
-          confirm?.kind === "archive"
+          confirm?.kind === "refund"
+            ? "Issue full refund?"
+            : confirm?.kind === "archiveTransaction"
+              ? "Archive transaction?"
+              : confirm?.kind === "restoreTransaction"
+                ? "Restore transaction?"
+            : confirm?.kind === "archive"
             ? `Archive ${confirm.printer.name}?`
             : `Disable ${confirm?.printer.name ?? "printer"}?`
         }
         description={
-          confirm?.kind === "archive"
+          confirm?.kind === "refund"
+            ? "This sends an irreversible full refund to Razorpay. It is allowed only because the print job has definitely failed."
+            : confirm?.kind === "archiveTransaction"
+              ? "This hides the transaction from the normal list but preserves its financial audit record."
+              : confirm?.kind === "restoreTransaction"
+                ? "This returns the transaction to the normal admin list."
+            : confirm?.kind === "archive"
             ? "The printer will remain in historical orders but cannot be enabled without a future restore action."
             : "Students will no longer be able to select this printer. Existing order and transaction history remains unchanged."
         }
         confirmLabel={
-          confirm?.kind === "archive" ? "Archive printer" : "Disable printer"
+          confirm?.kind === "refund" ? "Issue refund" : confirm?.kind === "archiveTransaction" ? "Archive transaction" : confirm?.kind === "restoreTransaction" ? "Restore transaction" : confirm?.kind === "archive" ? "Archive printer" : "Disable printer"
         }
         danger
         onCancel={() => setConfirm(null)}
@@ -419,6 +516,8 @@ export default function AdminScreen() {
         <Detail
           transaction={selectedTransaction}
           onClose={() => setSelectedTransaction(null)}
+          onRefund={() => setConfirm({ kind: "refund", transaction: selectedTransaction })}
+          onArchive={() => setConfirm({ kind: selectedTransaction.archived ? "restoreTransaction" : "archiveTransaction", transaction: selectedTransaction })}
         />
       )}
     </main>
@@ -464,7 +563,7 @@ function Dashboard({
                   <small>{printer.location}</small>
                 </span>
                 <Status
-                  value={printer.archived ? "ARCHIVED" : printer.status}
+                  value={printer.archived ? "ARCHIVED" : printer.studentAvailable ? "AVAILABLE" : printer.active ? printer.status : "DISABLED"}
                 />
               </div>
             ))
@@ -482,12 +581,14 @@ function Transactions({
   setFilters,
   loading,
   onView,
+  onExport,
 }: {
   page: PageResult<AdminTransaction>;
   filters: any;
   setFilters: (value: any) => void;
   loading: boolean;
   onView: (id: string) => void;
+  onExport: () => void;
 }) {
   const change = (key: string, value: string | number) =>
     setFilters({ ...filters, [key]: value, page: key === "page" ? value : 0 });
@@ -531,6 +632,17 @@ function Transactions({
           onChange={(e) => change("from", e.target.value)}
           className="min-h-11 border px-2"
         />
+        <label className="flex min-h-11 items-center gap-2 border px-3 text-sm font-semibold">
+          <input
+            type="checkbox"
+            checked={filters.includeArchived === "true"}
+            onChange={(e) => change("includeArchived", e.target.checked ? "true" : "")}
+          />
+          Show archived
+        </label>
+        <button onClick={onExport} className="flex min-h-11 items-center justify-center gap-2 border px-3 font-bold">
+          <Download size={17} /> Export CSV
+        </button>
         <input
           aria-label="To date"
           type="date"
@@ -682,7 +794,8 @@ function Printers(props: PrintersProps) {
     <div className="grid gap-6 xl:grid-cols-[320px_1fr]">
       <div>
         <form onSubmit={props.onAdd} className="border bg-white p-5">
-          <h2 className="font-extrabold">Add Epson printer</h2>
+          <h2 className="font-extrabold">Connect Epson printer</h2>
+          <p className="mt-2 text-sm leading-5 text-lux-ink/55">Name and location label the printer on campus. After this step, Epson opens so you can authorize the physical printer; its device ID and model are imported automatically.</p>
           <label className="mt-4 block text-sm font-bold">
             Friendly name
             <input
@@ -706,7 +819,7 @@ function Printers(props: PrintersProps) {
             />
           </label>
           <button className="mt-4 flex min-h-11 w-full items-center justify-center gap-2 bg-lux-ink font-bold text-white">
-            <Plus size={17} /> Add printer
+            <Link2 size={17} /> Add and connect Epson
           </button>
         </form>
         <div className="mt-4 space-y-2">
@@ -743,6 +856,17 @@ function Printers(props: PrintersProps) {
                   {props.selected.connectionState} ·{" "}
                   {props.selected.active ? "Enabled" : "Disabled"}
                 </p>
+                {props.selected.providerDeviceId && <p className="mt-1 text-xs text-lux-ink/45">Epson device ID: {props.selected.providerDeviceId}</p>}
+                {props.selected.studentAvailable ? (
+                  <p className="mt-3 text-sm font-bold text-emerald-700">Available to students</p>
+                ) : (
+                  <div className="mt-3 border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+                    <p className="font-bold">Not available to students</p>
+                    <ul className="mt-2 list-disc space-y-1 pl-5">
+                      {props.selected.availabilityIssues.map((issue) => <li key={issue}>{issue}</li>)}
+                    </ul>
+                  </div>
+                )}
               </div>
               <div className="flex flex-wrap gap-2">
                 {props.selected.connectionState !== "CONNECTED" && (
@@ -753,18 +877,10 @@ function Printers(props: PrintersProps) {
                     <Link2 size={16} /> Connect
                   </button>
                 )}
-                <button
-                  onClick={() => props.onRefresh(props.selected!)}
-                  className="min-h-11 border px-4 font-bold"
-                >
-                  Refresh capabilities
-                </button>
-                <button
-                  onClick={() => props.onTest(props.selected!)}
-                  className="flex min-h-11 items-center gap-2 border px-4 font-bold"
-                >
-                  <Send size={16} /> Send test print
-                </button>
+                {props.selected.connectionState === "CONNECTED" && <>
+                  <button onClick={() => props.onRefresh(props.selected!)} className="min-h-11 border px-4 font-bold">Refresh capabilities</button>
+                  <button onClick={() => props.onTest(props.selected!)} className="flex min-h-11 items-center gap-2 border px-4 font-bold"><Send size={16} /> Send test print</button>
+                </>}
                 {props.selected.active && (
                   <button
                     onClick={() => props.onDisable(props.selected!)}
@@ -872,9 +988,13 @@ function Printers(props: PrintersProps) {
 function Detail({
   transaction: t,
   onClose,
+  onRefund,
+  onArchive,
 }: {
   transaction: AdminTransaction;
   onClose: () => void;
+  onRefund: () => void;
+  onArchive: () => void;
 }) {
   return (
     <div
@@ -904,6 +1024,13 @@ function Detail({
             Print: t.print_status,
             Created: date(t.created_at),
             Failure: t.failure_reason,
+            "Refund status": t.refund_status,
+            "Refund ID": t.refund_id,
+            "Refund amount": t.refund_amount_minor == null ? null : money(t.refund_amount_minor),
+            "Refund reason": t.refund_reason,
+            "Refund failure": t.refund_failure_reason,
+            "Refunded at": t.refunded_at ? date(t.refunded_at) : null,
+            Archived: t.archived ? "Yes" : "No",
           }).map(([k, v]) => (
             <div
               key={k}
@@ -914,6 +1041,14 @@ function Detail({
             </div>
           ))}
         </dl>
+        {t.payment_status === "CAPTURED" && t.print_status === "FAILED" && t.refund_status !== "PROCESSED" && t.refund_status !== "PENDING" && (
+          <button onClick={onRefund} className="mt-6 min-h-11 w-full bg-red-700 px-4 font-bold text-white">
+            Issue full refund
+          </button>
+        )}
+        <button onClick={onArchive} className="mt-3 min-h-11 w-full border px-4 font-bold">
+          {t.archived ? "Restore transaction" : "Archive transaction"}
+        </button>
       </div>
     </div>
   );

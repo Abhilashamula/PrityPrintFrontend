@@ -19,7 +19,7 @@ export default function LoginScreen() {
     try {
       if (email.trim().toLowerCase() === 'admin' && password === 'admin') {
         const result = await apiClient.adminLogin('admin', 'admin')
-        apiClient.setAccessToken(result.accessToken)
+        apiClient.setAdminAccessToken(result.accessToken)
         navigate('/admin')
         return
       }

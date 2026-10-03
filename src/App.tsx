@@ -3,6 +3,8 @@ import { lazy, Suspense, useEffect } from 'react'
 import { useSessionStore } from './store/sessionStore'
 import { usePricing } from './hooks/usePricing'
 import KioskStatusBanner from './components/KioskStatusBanner'
+import { apiClient } from './lib/apiClient'
+import { useAuthStore } from './store/authStore'
 
 // Screens
 const WelcomeScreen = lazy(() => import('./screens/WelcomeScreen'))
@@ -23,11 +25,21 @@ export default function App() {
 
   // Read kiosk_id from URL query param (e.g. ?kiosk_id=kiosk_002)
   const setKioskId = useSessionStore((s) => s.setKioskId)
+  const setUser = useAuthStore((state) => state.setUser)
+  const clearUser = useAuthStore((state) => state.clearUser)
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
     const kiosk  = params.get('kiosk_id')
     if (kiosk) setKioskId(kiosk)
   }, [setKioskId])
+
+  useEffect(() => {
+    if (!apiClient.hasAccessToken()) return
+    void apiClient.me().then(setUser).catch(() => {
+      apiClient.logout()
+      clearUser('Your session expired. Please sign in again.')
+    })
+  }, [clearUser, setUser])
 
   return (
     <BrowserRouter>

@@ -53,8 +53,11 @@ export interface AdminPrinter {
   provider: 'EPSON_CONNECT' | 'LOCAL_AGENT' | string
   manufacturer: string | null
   model: string | null
+  providerDeviceId: string | null
   connectionState: string
   archived: boolean
+  studentAvailable: boolean
+  availabilityIssues: string[]
 }
 
 export interface AdminTransaction {
@@ -63,6 +66,9 @@ export interface AdminTransaction {
   amount_minor: number; currency: string; payment_status: string; order_status: string; print_status: string
   created_at: string; paid_at: string | null; failure_reason: string | null; print_job_id: string | null
   file_name?: string; total_pages?: number; copies?: number; paper_size?: string; paper_type?: string; color_mode?: string
+  refund_id: string | null; refund_amount_minor: number | null; refund_status: string | null
+  refund_reason: string | null; refund_failure_reason: string | null; refunded_at: string | null
+  archived: boolean; archived_at: string | null
 }
 export interface PageResult<T> { items: T[]; page: number; size: number; total: number; totalPages: number }
 export interface AdminDashboard {
@@ -150,7 +156,7 @@ export const apiClient = {
       method: 'POST',
       body: JSON.stringify(details),
     })
-    accessToken = result.accessToken
+    this.setAccessToken(result.accessToken)
     return result
   },
   async verifyEmail(token: string) {
@@ -164,7 +170,7 @@ export const apiClient = {
       method: 'POST',
       body: JSON.stringify({ email, password }),
     })
-    accessToken = result.accessToken
+    this.setAccessToken(result.accessToken)
     return result
   },
   me() {
@@ -175,6 +181,9 @@ export const apiClient = {
   },
   availablePrinters() {
     return request<AvailablePrinter[]>('/printers')
+  },
+  developmentPrinterBypass() {
+    return request<{ id: string; name: string }>('/dev/printer-bypass')
   },
   printerCapabilities(printerId: string) {
     return request<PrinterCapabilities>(`/printers/${printerId}/capabilities`)
@@ -256,6 +265,20 @@ export const apiClient = {
   adminTransaction(id: string) {
     return adminRequest<AdminTransaction>(`/admin/transactions/${id}`)
   },
+  adminRefundTransaction(id: string, reason: string) {
+    return adminRequest<{ orderId: string; orderStatus: string; refundStatus: string }>(`/admin/transactions/${id}/refund`, {
+      method: 'POST', body: JSON.stringify({ reason }),
+    })
+  },
+  adminArchiveTransaction(id: string) {
+    return adminRequest<{ id: string; archived: boolean }>(`/admin/transactions/${id}/archive`, { method: 'POST' })
+  },
+  adminRestoreTransaction(id: string) {
+    return adminRequest<{ id: string; archived: boolean }>(`/admin/transactions/${id}/restore`, { method: 'POST' })
+  },
+  adminExportTransactions() {
+    return adminDownload('/admin/transactions/export')
+  },
   adminPrinterJobs(id: string, page = 0) {
     return adminRequest<PageResult<Record<string, unknown>>>(`/admin/printers/${id}/jobs?page=${page}&size=20`)
   },
@@ -277,6 +300,9 @@ export const apiClient = {
   logout() {
     accessToken = null
     sessionStorage.removeItem('pingprint_access_token')
+  },
+  hasAccessToken() {
+    return Boolean(accessToken)
   },
   adminEpsonConnect(id: string) {
     return adminRequest<{ authorizationUrl: string }>(`/admin/printers/${id}/epson/connect`)
@@ -304,8 +330,33 @@ export const apiClient = {
     adminToken = token
     sessionStorage.setItem('pingprint_admin_token', token)
   },
+  clearAdminAccessToken() {
+    adminToken = null
+    sessionStorage.removeItem('pingprint_admin_token')
+  },
 }
 
-function adminRequest<T>(path: string, options: RequestInit = {}) {
-  return request<T>(path, options, adminToken)
+async function adminRequest<T>(path: string, options: RequestInit = {}) {
+  try {
+    return await request<T>(path, options, adminToken)
+  } catch (error) {
+    if (adminToken !== null && error instanceof ApiError && (error.status === 401 || error.status === 403)) {
+      adminToken = null
+      sessionStorage.removeItem('pingprint_admin_token')
+      window.dispatchEvent(new Event('pingprint:admin-session-expired'))
+      throw new ApiError('Your admin session expired. Please sign in again.', 'ADMIN_SESSION_EXPIRED', error.status)
+    }
+    throw error
+  }
+}
+
+async function adminDownload(path: string) {
+  const headers = new Headers()
+  if (adminToken) headers.set('Authorization', `Bearer ${adminToken}`)
+  const response = await fetch(`${API_URL}${path}`, { headers })
+  if (!response.ok) {
+    const body = await response.json().catch(() => ({}))
+    throw new ApiError(body.message ?? 'The export failed.', body.code ?? 'EXPORT_FAILED', response.status)
+  }
+  return response.blob()
 }

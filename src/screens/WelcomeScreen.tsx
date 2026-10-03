@@ -242,6 +242,23 @@ export default function WelcomeScreen() {
                 >
                   <RefreshCw size={15} /> Refresh availability
                 </button>
+                {import.meta.env.DEV && (
+                  <button
+                    onClick={async () => {
+                      try {
+                        const printer = await apiClient.developmentPrinterBypass();
+                        setPrinter(printer.id, printer.name);
+                        setPrinterPickerOpen(false);
+                        navigate("/upload");
+                      } catch (error) {
+                        setPrinterError(error instanceof Error ? error.message : "Development bypass is unavailable.");
+                      }
+                    }}
+                    className="mt-4 flex items-center gap-2 border-t border-amber-300 pt-4 font-extrabold"
+                  >
+                    <ArrowRight size={15} /> Skip printer selection for upload testing
+                  </button>
+                )}
               </div>
             ) : (
               <div className="mt-6 grid gap-3">
@@ -335,11 +352,14 @@ export default function WelcomeScreen() {
         <div className="welcome-hero__paper welcome-hero__paper--two" />
         <div className="welcome-hero__registration welcome-hero__registration--one" />
         <div className="welcome-hero__registration welcome-hero__registration--two" />
-        <div className="relative z-10 max-w-2xl">
+        <div className="hero-copy relative z-10 max-w-2xl">
           <p className="mb-6 flex items-center gap-3 text-xs font-extrabold uppercase tracking-[0.28em] text-lux-copper">
             <span className="h-px w-10 bg-lux-copper" /> Campus printing,
             reimagined
           </p>
+          <div className="scene-enter relative mx-auto mb-8 h-[220px] w-full max-w-[340px] lg:hidden">
+            <PrinterScene />
+          </div>
           <h1 className="max-w-2xl font-display text-6xl font-semibold leading-[0.88] tracking-tight text-lux-ink sm:text-8xl">
             A better way to <em className="text-lux-copper">bring ideas</em> to
             paper.
@@ -385,7 +405,7 @@ export default function WelcomeScreen() {
           </div>
         </div>
         <div
-          className="perspective-stage relative mx-auto mt-16 h-[290px] max-w-[430px] sm:h-[360px] lg:absolute lg:bottom-8 lg:right-16 lg:mt-0 lg:h-[480px] lg:w-[520px]"
+          className="scene-enter perspective-stage relative mx-auto mt-16 hidden h-[290px] max-w-[430px] sm:h-[360px] lg:absolute lg:bottom-8 lg:right-16 lg:mt-0 lg:block lg:h-[480px] lg:w-[520px]"
           aria-label="A student boy and girl using a 3D printer kiosk"
         >
           <PrinterScene />
@@ -414,7 +434,7 @@ export default function WelcomeScreen() {
         </div>
         <div className="grid gap-px border-y border-lux-ink/15 bg-lux-ink/15 md:grid-cols-3">
           {BENEFITS.map((benefit, index) => (
-            <article key={benefit.title} className="bg-lux-paper p-7 lg:p-10">
+            <article key={benefit.title} className="motion-card bg-lux-paper p-7 lg:p-10">
               <span className="font-display text-4xl text-lux-copper">
                 0{index + 1}
               </span>
