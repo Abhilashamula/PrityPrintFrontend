@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowLeft, ArrowRight, Check, Edit2, FileCheck2, LockKeyhole, Phone, Printer, ShieldCheck, Sparkles } from 'lucide-react'
+import { ArrowRight, Check, Edit2, FileCheck2, LockKeyhole, Phone, ShieldCheck, Sparkles } from 'lucide-react'
 import FilePreview from '../components/FilePreview'
 import SupportContact from '../components/SupportContact'
 import { useSessionStore } from '../store/sessionStore'
 import { useKioskStatus } from '../hooks/useKioskStatus'
 import { PAPER_DIMENSIONS_MM } from '../types'
-import AccountMenu from '../components/AccountMenu'
+import WorkflowHeader from '../components/WorkflowHeader'
 import { apiClient } from '../lib/apiClient'
 
 export default function SummaryScreen() {
@@ -80,13 +80,7 @@ export default function SummaryScreen() {
 
   return (
     <main className="min-h-screen bg-lux-paper text-lux-ink screen-enter">
-      <header className="sticky top-0 z-30 border-b border-lux-ink/10 bg-lux-paper/95 px-4 py-3 backdrop-blur-md sm:px-8 sm:py-4">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4">
-          <button onClick={() => navigate('/options')} className="touch-target flex items-center gap-2 text-sm font-bold text-lux-ink/60 transition-colors hover:text-lux-ink" aria-label="Back to options"><ArrowLeft size={18} /><span className="hidden sm:inline">Back</span></button>
-          <div className="flex items-center gap-2 text-[10px] font-extrabold uppercase tracking-[0.14em] sm:gap-3 sm:text-xs"><span className="text-lux-ink/30">Upload</span><span className="text-lux-copper">/</span><span className="text-lux-ink/30">Options</span><span className="text-lux-copper">/</span><span className="flex h-7 w-7 items-center justify-center rounded-full bg-lux-copper text-white">3</span><span>Review</span></div>
-          <div className="flex items-center gap-3"><AccountMenu /><span className="flex h-10 w-10 items-center justify-center rounded-full bg-lux-ink text-lux-paper"><Printer size={19} strokeWidth={1.5} /></span></div>
-        </div>
-      </header>
+      <WorkflowHeader step="review" onBack={() => navigate('/options')} />
 
       <div className="mx-auto grid max-w-6xl gap-8 px-4 py-8 sm:px-8 sm:py-12 lg:grid-cols-[minmax(0,1fr)_360px] lg:gap-12">
         <section className="min-w-0">

@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ChevronDown, LogOut, WalletCards } from 'lucide-react'
+import { ChevronDown, LogIn, LogOut, UserPlus, UserRound, WalletCards } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { apiClient } from '../lib/apiClient'
 import { useAuthStore } from '../store/authStore'
@@ -12,9 +12,16 @@ export default function AccountMenu() {
 
   if (!user) {
     return (
-      <div className="flex items-center gap-2">
-        <button onClick={() => navigate('/login')} className="border border-lux-ink/15 px-4 py-2.5 text-xs font-extrabold uppercase tracking-[0.1em] text-lux-ink hover:border-lux-copper hover:text-lux-copper">Sign in</button>
-        <button onClick={() => navigate('/signup')} className="bg-lux-ink px-4 py-2.5 text-xs font-extrabold uppercase tracking-[0.1em] text-lux-paper hover:bg-lux-copper">Sign up</button>
+      <div className="relative">
+        <div className="hidden items-center gap-2 sm:flex">
+          <button onClick={() => navigate('/login')} className="border border-lux-ink/15 px-4 py-2.5 text-xs font-extrabold uppercase tracking-[0.1em] text-lux-ink hover:border-lux-copper hover:text-lux-copper">Sign in</button>
+          <button onClick={() => navigate('/signup')} className="bg-lux-ink px-4 py-2.5 text-xs font-extrabold uppercase tracking-[0.1em] text-lux-paper hover:bg-lux-copper">Sign up</button>
+        </div>
+        <button onClick={() => setOpen((value) => !value)} className="touch-target flex h-11 w-11 items-center justify-center rounded-full bg-lux-ink text-lux-paper sm:hidden" aria-label="Open account menu" aria-expanded={open} aria-haspopup="menu"><UserRound size={19} /></button>
+        {open && <div className="menu-enter absolute right-0 top-12 z-50 w-48 border border-lux-ink/10 bg-white p-2 shadow-xl sm:hidden" role="menu">
+          <button onClick={() => navigate('/login')} className="flex min-h-11 w-full items-center gap-2 px-3 text-left text-xs font-extrabold uppercase tracking-[0.08em]" role="menuitem"><LogIn size={16} /> Sign in</button>
+          <button onClick={() => navigate('/signup')} className="flex min-h-11 w-full items-center gap-2 bg-lux-ink px-3 text-left text-xs font-extrabold uppercase tracking-[0.08em] text-white" role="menuitem"><UserPlus size={16} /> Sign up</button>
+        </div>}
       </div>
     )
   }
@@ -42,7 +49,7 @@ export default function AccountMenu() {
       </button>
 
       {open && (
-        <div className="absolute right-0 top-14 z-50 w-72 border border-lux-ink/10 bg-white p-4 shadow-xl" role="menu">
+        <div className="menu-enter absolute right-0 top-14 z-50 w-72 max-w-[calc(100vw-2rem)] border border-lux-ink/10 bg-white p-4 shadow-xl" role="menu">
           <p className="truncate text-sm font-extrabold text-lux-ink">{user.name}</p>
           <p className="mt-1 truncate text-xs text-lux-ink/50">{user.email}</p>
           <div className="mt-4 flex items-center justify-between border-y border-lux-ink/10 py-3">

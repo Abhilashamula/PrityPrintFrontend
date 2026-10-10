@@ -39,13 +39,13 @@ export default function DoneScreen() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 to-pp-bg
-                    flex flex-col items-center justify-center screen-enter px-6">
-      <div className="flex flex-col items-center gap-8 max-w-lg text-center">
+    <div className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-lux-paper px-4 py-12 text-lux-ink screen-enter sm:px-6">
+      <div className="luxury-grid pointer-events-none absolute inset-0 opacity-35" />
+      <div className="surface-enter relative z-10 flex w-full max-w-lg flex-col items-center gap-7 border border-lux-ink/10 bg-white/90 px-5 py-9 text-center shadow-[0_24px_60px_rgba(23,33,31,0.1)] sm:px-9">
         {/* Success icon */}
         <div className="relative">
-          <div className="w-28 h-28 rounded-full bg-green-100 flex items-center justify-center">
-            <CheckCircle2 size={64} className="text-green-500" />
+          <div className="status-breathe flex h-24 w-24 items-center justify-center rounded-full bg-[#e5f3ea]">
+            <CheckCircle2 size={55} className="text-[#287a50]" />
           </div>
           <div className="absolute -bottom-2 -right-2 w-10 h-10 rounded-full bg-pp-blue
                           flex items-center justify-center shadow-md">
@@ -55,15 +55,16 @@ export default function DoneScreen() {
 
         {/* Message */}
         <div>
-          <h1 className="text-4xl font-black text-pp-dark">Print job completed</h1>
-          <p className="text-xl text-pp-gray mt-3">
+          <p className="mb-3 text-[10px] font-extrabold uppercase tracking-[0.24em] text-[#287a50]">Ready to collect</p>
+          <h1 className="font-display text-5xl font-semibold leading-none">Print job completed.</h1>
+          <p className="mt-4 text-sm leading-6 text-lux-ink/60 sm:text-base">
             Epson Connect reports this job as completed. Please check the selected printer&apos;s output tray.
           </p>
         </div>
 
         {/* Receipt card */}
-        <div className="w-full bg-white rounded-2xl border border-pp-blue/15 shadow-sm overflow-hidden">
-          <div className="bg-pp-blue px-5 py-3">
+        <div className="w-full overflow-hidden border border-lux-ink/10 bg-white text-left">
+          <div className="bg-lux-ink px-5 py-3">
             <p className="text-white font-bold">Receipt</p>
           </div>
           <div className="px-5 py-4 space-y-2 text-sm">
@@ -91,17 +92,13 @@ export default function DoneScreen() {
         <div className="w-full flex flex-col gap-3">
           <button
             onClick={handlePrintAnother}
-            className="w-full bg-pp-orange hover:bg-pp-orange-dark text-white font-black text-lg
-                       py-5 rounded-2xl touch-target flex items-center justify-center gap-3
-                       transition-colors shadow-lg"
+            className="touch-target flex w-full items-center justify-center gap-3 bg-lux-copper py-4 text-sm font-extrabold uppercase tracking-[0.1em] text-white shadow-lg hover:bg-[#b26743]"
           >
             <RotateCcw size={22} /> Print Another Document
           </button>
           <button
             onClick={handleHome}
-            className="w-full bg-white border-2 border-pp-blue/25 hover:border-pp-blue
-                       text-pp-dark font-bold text-base py-4 rounded-2xl touch-target
-                       transition-colors"
+            className="touch-target w-full border border-lux-ink/15 bg-white py-4 text-sm font-bold text-lux-ink hover:border-lux-copper"
           >
             Return to Home
           </button>

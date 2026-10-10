@@ -261,23 +261,26 @@ export default function WelcomeScreen() {
                 )}
               </div>
             ) : (
-              <div className="mt-6 grid gap-3">
+              <div className="mt-6 grid gap-4 sm:grid-cols-2">
                 {printers.map((printer) => (
                   <button
                     key={printer.id}
                     onClick={() => choosePrinter(printer)}
-                    className="flex min-h-[78px] items-center gap-4 border border-lux-ink/10 bg-white px-4 py-4 text-left shadow-sm transition-colors hover:border-lux-copper hover:bg-lux-paper"
+                    className="group overflow-hidden border border-lux-ink/10 bg-white text-left shadow-sm transition-all hover:-translate-y-0.5 hover:border-lux-copper hover:shadow-lg"
                   >
-                    <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-lux-ink text-lux-paper">
-                      <Printer size={22} />
+                    <span className="block aspect-[16/8] overflow-hidden bg-[#eef0ec]">
+                      <img src={printer.imageUrl || "/assets/printer-fallback.png"} alt="" className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]" onError={(event) => { event.currentTarget.src = "/assets/printer-fallback.png"; }} />
                     </span>
+                    <span className="flex items-center gap-3 p-4">
                     <span className="min-w-0 flex-1">
+                      <span className="block text-[10px] font-extrabold uppercase tracking-[0.14em] text-lux-copper">{printer.campusName}</span>
                       <span className="block truncate text-base font-extrabold">
                         {printer.name}
                       </span>
                       <span className="mt-1 flex items-center gap-1.5 truncate text-xs text-lux-ink/55">
                         <MapPin size={13} /> {printer.location}
                       </span>
+                      {printer.model && <span className="mt-1 block truncate text-[11px] text-lux-ink/40">{printer.model}</span>}
                     </span>
                     <span className="flex shrink-0 items-center gap-1.5 text-[10px] font-extrabold uppercase tracking-[0.12em] text-emerald-700">
                       <span className="h-2 w-2 rounded-full bg-emerald-500" />{" "}
@@ -287,6 +290,7 @@ export default function WelcomeScreen() {
                       size={18}
                       className="shrink-0 text-lux-copper"
                     />
+                    </span>
                   </button>
                 ))}
               </div>

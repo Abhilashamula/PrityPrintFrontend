@@ -52,10 +52,9 @@ function usePrinterJob(orderId: string | null) {
 function PrinterAnimation({ printing }: { printing: boolean }) {
   return (
     <div className="relative flex items-center justify-center">
-      <div className={`w-32 h-32 rounded-3xl bg-gradient-to-br from-pp-blue to-pp-blue-dark
-                       flex items-center justify-center shadow-2xl
-                       ${printing ? 'animate-pulse' : ''}`}>
-        <Printer size={64} className="text-white" strokeWidth={1.5} />
+      <div className={`flex h-32 w-32 items-center justify-center rounded-[28px] border border-white/10 bg-lux-ink text-lux-paper shadow-[18px_20px_0_rgba(199,121,82,0.18),0_24px_50px_rgba(23,33,31,0.18)]
+                       ${printing ? 'status-breathe' : ''}`}>
+        <Printer size={62} strokeWidth={1.4} />
       </div>
       {printing && (
         <>
@@ -63,7 +62,7 @@ function PrinterAnimation({ printing }: { printing: boolean }) {
           {[0, 1, 2].map((i) => (
             <div
               key={i}
-              className="absolute bottom-0 left-1/2 -translate-x-1/2 w-20 h-0.5 bg-white/60 rounded"
+              className="absolute bottom-0 left-1/2 h-0.5 w-20 -translate-x-1/2 rounded bg-lux-copper/70"
               style={{
                 animation: `slideDown 1.2s ease-in-out ${i * 0.4}s infinite`,
                 transform: `translateX(-50%) translateY(${(i + 1) * 10}px)`,
@@ -113,23 +112,24 @@ export default function PrintingScreen() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-pp-blue-lighter/30 to-pp-bg
-                    flex flex-col items-center justify-center screen-enter">
-      <Logo size="sm" className="absolute top-6 left-1/2 -translate-x-1/2" />
+    <div className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-lux-paper px-5 text-lux-ink screen-enter">
+      <div className="luxury-grid pointer-events-none absolute inset-0 opacity-40" />
+      <Logo size="sm" className="absolute left-1/2 top-6 z-10 -translate-x-1/2" />
 
-      <div className="flex flex-col items-center gap-8 px-8 max-w-md text-center">
+      <div className="surface-enter relative z-10 flex w-full max-w-md flex-col items-center gap-8 border border-lux-ink/10 bg-white/85 px-6 py-10 text-center shadow-[0_24px_60px_rgba(23,33,31,0.1)] backdrop-blur-sm sm:px-10">
         {/* Printer animation */}
         <PrinterAnimation printing={phase === 'printing'} />
 
         {/* Status */}
         <div>
-          <h1 className="text-3xl font-black text-pp-dark">
+          <p className="mb-3 text-[10px] font-extrabold uppercase tracking-[0.24em] text-lux-copper">Live print status</p>
+          <h1 className="font-display text-4xl font-semibold leading-none sm:text-5xl">
             {phase === 'done'   ? 'Job completed'
-            : phase === 'jammed' ? '⚠️ Jam Detected'
-            : phase === 'failed' ? '⚠️ Printer Unavailable'
+            : phase === 'jammed' ? 'Jam detected'
+            : phase === 'failed' ? 'Printer unavailable'
             : 'Printing in Progress'}
           </h1>
-          <p className="text-pp-gray mt-2 text-lg">{statusLabel[phase]}</p>
+          <p className="mt-3 text-sm leading-6 text-lux-ink/60 sm:text-base">{statusLabel[phase]}</p>
           {file && (
             <p className="text-pp-gray/60 text-sm mt-1 truncate max-w-xs">{file.name}</p>
           )}
@@ -142,9 +142,9 @@ export default function PrintingScreen() {
               <span>{completed} of {totalPages} pages</span>
               <span>{progressPct}%</span>
             </div>
-            <div className="w-full bg-pp-blue/15 rounded-full h-4 overflow-hidden">
+            <div className="h-3 w-full overflow-hidden rounded-full bg-lux-ink/10">
               <div
-                className="h-full bg-gradient-to-r from-pp-blue to-pp-blue-dark rounded-full transition-all duration-500"
+                className="h-full rounded-full bg-lux-copper transition-all duration-500"
                 style={{ width: `${progressPct}%` }}
                 role="progressbar"
                 aria-valuenow={progressPct}
@@ -157,8 +157,8 @@ export default function PrintingScreen() {
 
         {/* Queued spinner */}
         {phase === 'queued' && (
-          <div className="flex items-center gap-3 text-pp-gray">
-            <div className="w-6 h-6 border-3 border-pp-blue border-t-transparent rounded-full animate-spin" />
+          <div className="flex items-center gap-3 text-lux-ink/60">
+            <div className="h-6 w-6 animate-spin rounded-full border-2 border-lux-copper border-t-transparent" />
             <span>Connecting to printer…</span>
           </div>
         )}
@@ -173,7 +173,7 @@ export default function PrintingScreen() {
           <AlertTriangle size={56} className="text-amber-500 animate-fade-in" />
         )}
 
-        <p className="text-pp-dark/40 text-sm">
+        <p className="border-t border-lux-ink/10 pt-5 text-xs leading-5 text-lux-ink/45">
           Please do not leave the kiosk — collect your prints from the output tray below.
         </p>
       </div>

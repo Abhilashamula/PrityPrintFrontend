@@ -42,17 +42,18 @@ export default function ErrorScreen() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-amber-50 to-pp-bg
-                    flex flex-col items-center justify-center screen-enter px-6">
-      <div className="flex flex-col items-center gap-8 max-w-lg text-center">
+    <div className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-lux-paper px-4 py-12 text-lux-ink screen-enter sm:px-6">
+      <div className="luxury-grid pointer-events-none absolute inset-0 opacity-35" />
+      <div className="surface-enter relative z-10 flex w-full max-w-lg flex-col items-center gap-7 border border-lux-ink/10 bg-white/90 px-5 py-9 text-center shadow-[0_24px_60px_rgba(23,33,31,0.1)] sm:px-9">
         {/* Warning icon */}
-        <div className="w-28 h-28 rounded-full bg-amber-100 flex items-center justify-center">
+        <div className="status-breathe flex h-24 w-24 items-center justify-center rounded-full bg-amber-100">
           <AlertTriangle size={64} className="text-amber-500" />
         </div>
 
         {/* Message */}
         <div>
-          <h1 className="text-3xl font-black text-pp-dark">
+          <p className="mb-3 text-[10px] font-extrabold uppercase tracking-[0.24em] text-amber-700">Attention required</p>
+          <h1 className="font-display text-5xl font-semibold leading-none">
             {isJam ? 'Paper Jam Detected' : 'Print Job Failed'}
           </h1>
           <p className="text-pp-gray mt-3">
@@ -64,7 +65,7 @@ export default function ErrorScreen() {
         </div>
 
         {/* Refund card */}
-        <div className="w-full bg-white rounded-2xl border border-amber-200 shadow-sm overflow-hidden">
+        <div className="w-full overflow-hidden border border-amber-200 bg-white text-left">
           <div className="bg-amber-500 px-5 py-3">
             <p className="text-white font-bold flex items-center gap-2">
               <IndianRupee size={18} /> Refund Status
@@ -110,17 +111,13 @@ export default function ErrorScreen() {
         <div className="w-full flex flex-col gap-3">
           <button
             onClick={handleRetry}
-            className="w-full bg-pp-orange hover:bg-pp-orange-dark text-white font-black text-lg
-                       py-5 rounded-2xl touch-target flex items-center justify-center gap-3
-                       transition-colors shadow-lg"
+            className="touch-target flex w-full items-center justify-center gap-3 bg-lux-copper py-4 text-sm font-extrabold uppercase tracking-[0.1em] text-white shadow-lg hover:bg-[#b26743]"
           >
             <RotateCcw size={22} /> Try Again
           </button>
           <button
             onClick={handleHome}
-            className="w-full bg-white border-2 border-pp-blue/25 hover:border-pp-blue
-                       text-pp-dark font-bold text-base py-4 rounded-2xl touch-target
-                       transition-colors"
+            className="touch-target w-full border border-lux-ink/15 bg-white py-4 text-sm font-bold text-lux-ink hover:border-lux-copper"
           >
             <Home size={18} className="inline mr-2" />
             Return to Home
@@ -135,4 +132,3 @@ export default function ErrorScreen() {
     </div>
   )
 }
-

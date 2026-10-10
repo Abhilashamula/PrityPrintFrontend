@@ -2,6 +2,10 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Archive,
+  AlertCircle,
+  CheckCircle2,
+  Clock3,
+  CreditCard,
   Download,
   ChevronLeft,
   ChevronRight,
@@ -17,6 +21,8 @@ import {
   Send,
   Settings,
   House,
+  IndianRupee,
+  ServerCog,
   X,
 } from "lucide-react";
 import {
@@ -89,7 +95,9 @@ export default function AdminScreen() {
   const [mediaDraft, setMediaDraft] = useState(emptyMedia);
   const [addForm, setAddForm] = useState({
     name: "",
+    campusName: "",
     location: "",
+    imageUrl: "",
     provider: "EPSON_CONNECT",
   });
   const [confirm, setConfirm] = useState<{
@@ -132,12 +140,14 @@ export default function AdminScreen() {
     if (!token) return;
     setLoading(true);
     try {
-      const [metrics, list] = await Promise.all([
+      const [metrics, list, recent] = await Promise.all([
         apiClient.adminDashboard(),
         apiClient.adminPrinters(),
+        apiClient.adminTransactions({ page: 0, size: 6 }),
       ]);
       setDashboard(metrics);
       setPrinters(list);
+      setTransactions(recent);
     } catch (cause) {
       fail(cause, "Unable to load admin data.");
     } finally {
@@ -197,7 +207,7 @@ export default function AdminScreen() {
     event.preventDefault();
     try {
       const printer = await apiClient.adminAddPrinter(addForm);
-      setAddForm({ name: "", location: "", provider: "EPSON_CONNECT" });
+      setAddForm({ name: "", campusName: "", location: "", imageUrl: "", provider: "EPSON_CONNECT" });
       toast.push("Printer record created. Continue in Epson to authorize the physical printer.", "success");
       const { authorizationUrl } = await apiClient.adminEpsonConnect(printer.id);
       window.location.assign(authorizationUrl);
@@ -255,7 +265,9 @@ export default function AdminScreen() {
       } else {
         await apiClient.adminUpdatePrinter(confirm.printer.id, {
           name: confirm.printer.name,
+          campusName: confirm.printer.campusName,
           location: confirm.printer.location,
+          imageUrl: confirm.printer.imageUrl ?? "",
           active: false,
         });
         toast.push("Printer disabled.", "success");
@@ -356,11 +368,9 @@ export default function AdminScreen() {
     </>
   );
   return (
-    <main className="min-h-screen bg-[#f4f5f3] text-lux-ink lg:grid lg:grid-cols-[240px_1fr]">
-      <aside className="hidden min-h-screen bg-lux-ink p-4 lg:block">
-        <p className="mb-8 px-4 pt-3 text-lg font-extrabold text-white">
-          Ping &amp; Print
-        </p>
+    <main className="min-h-screen bg-[#f3f5f4] text-lux-ink lg:grid lg:grid-cols-[248px_1fr]">
+      <aside className="hidden min-h-screen border-r border-white/10 bg-lux-ink p-4 lg:block">
+        <div className="mb-8 px-4 pt-3"><p className="text-lg font-extrabold text-white">Ping<span className="text-lux-copper">&amp;</span>Print</p><p className="mt-1 text-[9px] font-bold uppercase tracking-[0.18em] text-white/40">Operations console</p></div>
         <nav className="space-y-1">{nav}</nav>
       </aside>
       {drawer && (
@@ -378,7 +388,7 @@ export default function AdminScreen() {
         </div>
       )}
       <div className="min-w-0">
-        <header className="flex min-h-16 items-center justify-between border-b bg-white px-4 sm:px-7">
+        <header className="header-enter sticky top-0 z-30 flex min-h-16 items-center justify-between border-b border-lux-ink/10 bg-white/90 px-4 backdrop-blur-md sm:px-7">
           <button
             onClick={() => setDrawer(true)}
             className="p-3 lg:hidden"
@@ -386,7 +396,7 @@ export default function AdminScreen() {
           >
             <Menu />
           </button>
-          <h1 className="text-lg font-extrabold capitalize">{view}</h1>
+          <div><h1 className="text-lg font-extrabold capitalize">{view}</h1><p className="hidden text-xs text-lux-ink/45 sm:block">Monitor payments, print delivery and connected devices</p></div>
           <button
             onClick={() =>
               void (view === "transactions" ? loadTransactions() : loadBase())
@@ -412,6 +422,7 @@ export default function AdminScreen() {
               filters={filters}
               setFilters={setFilters}
               loading={loading}
+              printers={printers}
               onView={async (id) => {
                 try {
                   setSelectedTransaction(await apiClient.adminTransaction(id));
@@ -477,6 +488,10 @@ export default function AdminScreen() {
                 }
               }}
               onSaveMedia={saveMedia}
+              onViewTransactions={(printer) => {
+                setFilters({ ...filters, printerId: printer.id, page: 0 });
+                setView("transactions");
+              }}
             />
           )}
         </div>
@@ -526,6 +541,7 @@ export default function AdminScreen() {
 
 function Dashboard({
   data,
+  transactions,
   printers,
 }: {
   data: AdminDashboard | null;
@@ -534,30 +550,33 @@ function Dashboard({
 }) {
   const metrics = data
     ? [
-        ["Total orders", data.total_orders],
-        ["Successful payments", data.successful_payments],
-        ["Revenue", money(data.revenue_minor)],
-        ["Queued jobs", data.queued_jobs],
-        ["Failed jobs", data.failed_jobs],
-        ["Active printers", data.active_printers],
+        { label: "Revenue", value: money(data.revenue_minor), icon: IndianRupee, tone: "bg-emerald-50 text-emerald-700" },
+        { label: "Paid orders", value: data.successful_payments, icon: CreditCard, tone: "bg-sky-50 text-sky-700" },
+        { label: "Completed jobs", value: data.completed_jobs, icon: CheckCircle2, tone: "bg-emerald-50 text-emerald-700" },
+        { label: "Active printers", value: data.active_printers, icon: Printer, tone: "bg-lux-paper text-lux-copper" },
+        { label: "Jobs in queue", value: data.queued_jobs, icon: Clock3, tone: "bg-amber-50 text-amber-700" },
+        { label: "Needs attention", value: data.failed_jobs + data.pending_refunds, icon: AlertCircle, tone: "bg-red-50 text-red-700" },
       ]
     : [];
   return (
-    <>
+    <div className="surface-enter">
+      <div className="mb-6 flex flex-col justify-between gap-3 sm:flex-row sm:items-end"><div><p className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-lux-copper">Live operations</p><h2 className="mt-2 font-display text-4xl font-semibold leading-none">Campus at a glance.</h2></div><p className="text-xs text-lux-ink/45">{data?.total_orders ?? 0} orders recorded</p></div>
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-        {metrics.map(([label, value]) => (
-          <div key={label} className="border bg-white p-5">
-            <p className="text-sm text-lux-ink/55">{label}</p>
-            <p className="mt-2 text-3xl font-extrabold">{value}</p>
+        {metrics.map(({ label, value, icon: Icon, tone }) => (
+          <div key={label} className="motion-card border border-lux-ink/10 bg-white p-5 shadow-[0_8px_24px_rgba(23,33,31,0.04)]">
+            <div className="flex items-start justify-between gap-4"><p className="text-sm font-semibold text-lux-ink/55">{label}</p><span className={`flex h-9 w-9 items-center justify-center rounded-full ${tone}`}><Icon size={17} /></span></div>
+            <p className="mt-4 text-3xl font-extrabold">{value}</p>
           </div>
         ))}
       </div>
-      <section className="mt-7 border bg-white p-5">
-        <h2 className="font-extrabold">Printer status</h2>
+      {data && (data.payment_failures > 0 || data.unknown_jobs > 0 || data.pending_refunds > 0) && <section className="mt-5 grid gap-3 border border-amber-200 bg-amber-50 p-4 text-sm sm:grid-cols-3"><p><strong className="block text-lg">{data.payment_failures}</strong>Failed payment attempts</p><p><strong className="block text-lg">{data.unknown_jobs}</strong>Unknown print outcomes</p><p><strong className="block text-lg">{data.pending_refunds}</strong>Pending refunds</p></section>}
+      <div className="mt-7 grid gap-5 xl:grid-cols-[1.1fr_0.9fr]">
+      <section className="border border-lux-ink/10 bg-white p-5 shadow-[0_8px_24px_rgba(23,33,31,0.04)]">
+        <div className="flex items-center justify-between"><div><p className="text-[10px] font-extrabold uppercase tracking-[0.16em] text-lux-copper">Devices</p><h3 className="mt-1 font-extrabold">Printer availability</h3></div><ServerCog size={20} className="text-lux-ink/35" /></div>
         <div className="mt-4 grid gap-3 sm:grid-cols-2">
           {printers.length ? (
             printers.slice(0, 6).map((printer) => (
-              <div key={printer.id} className="flex justify-between border p-3">
+              <div key={printer.id} className="flex items-center justify-between border border-lux-ink/10 p-3">
                 <span>
                   <strong className="block">{printer.name}</strong>
                   <small>{printer.location}</small>
@@ -572,7 +591,9 @@ function Dashboard({
           )}
         </div>
       </section>
-    </>
+      <section className="border border-lux-ink/10 bg-white p-5 shadow-[0_8px_24px_rgba(23,33,31,0.04)]"><p className="text-[10px] font-extrabold uppercase tracking-[0.16em] text-lux-copper">Payments</p><h3 className="mt-1 font-extrabold">Recent activity</h3><div className="mt-4 divide-y divide-lux-ink/10">{transactions.length ? transactions.slice(0, 6).map((t) => <div key={t.transaction_id} className="flex items-center justify-between gap-3 py-3"><div className="min-w-0"><p className="truncate text-sm font-bold">{t.student_name}</p><p className="truncate text-xs text-lux-ink/45">{t.printer_name} · {date(t.created_at)}</p></div><div className="text-right"><p className="text-sm font-extrabold">{money(t.amount_minor)}</p><Status value={t.payment_status} /></div></div>) : <Empty text="No payment activity yet." />}</div></section>
+      </div>
+    </div>
   );
 }
 function Transactions({
@@ -580,6 +601,7 @@ function Transactions({
   filters,
   setFilters,
   loading,
+  printers,
   onView,
   onExport,
 }: {
@@ -587,6 +609,7 @@ function Transactions({
   filters: any;
   setFilters: (value: any) => void;
   loading: boolean;
+  printers: AdminPrinter[];
   onView: (id: string) => void;
   onExport: () => void;
 }) {
@@ -605,6 +628,10 @@ function Transactions({
             className="min-h-11 w-full border pl-10 pr-3"
           />
         </label>
+        <select aria-label="Printer" value={filters.printerId} onChange={(e) => change("printerId", e.target.value)} className="min-h-11 border px-2">
+          <option value="">All printers</option>
+          {printers.map((printer) => <option key={printer.id} value={printer.id}>{printer.name} · {printer.location}</option>)}
+        </select>
         <Filter
           value={filters.paymentStatus}
           label="Payment"
@@ -764,10 +791,12 @@ interface PrintersProps {
   selected: AdminPrinter | null;
   configured: AdminMediaConfig[];
   supported: SupportedMedia[];
-  addForm: { name: string; location: string; provider: string };
+  addForm: { name: string; campusName: string; location: string; imageUrl: string; provider: string };
   setAddForm: (value: {
     name: string;
+    campusName: string;
     location: string;
+    imageUrl: string;
     provider: string;
   }) => void;
   mediaDraft: AdminMediaConfig;
@@ -780,6 +809,7 @@ interface PrintersProps {
   onRefresh: (printer: AdminPrinter) => void;
   onTest: (printer: AdminPrinter) => void;
   onSaveMedia: (event: React.FormEvent) => void;
+  onViewTransactions: (printer: AdminPrinter) => void;
 }
 function Printers(props: PrintersProps) {
   const labels = useMemo(
@@ -808,6 +838,10 @@ function Printers(props: PrintersProps) {
             />
           </label>
           <label className="mt-3 block text-sm font-bold">
+            Campus name
+            <input required value={props.addForm.campusName} onChange={(e) => props.setAddForm({ ...props.addForm, campusName: e.target.value })} placeholder="Main Campus" className="mt-1 min-h-11 w-full border px-3" />
+          </label>
+          <label className="mt-3 block text-sm font-bold">
             Location
             <input
               required
@@ -817,6 +851,10 @@ function Printers(props: PrintersProps) {
               }
               className="mt-1 min-h-11 w-full border px-3"
             />
+          </label>
+          <label className="mt-3 block text-sm font-bold">
+            Printer image URL <span className="font-normal text-lux-ink/45">(optional)</span>
+            <input type="url" value={props.addForm.imageUrl} onChange={(e) => props.setAddForm({ ...props.addForm, imageUrl: e.target.value })} placeholder="https://..." className="mt-1 min-h-11 w-full border px-3" />
           </label>
           <button className="mt-4 flex min-h-11 w-full items-center justify-center gap-2 bg-lux-ink font-bold text-white">
             <Link2 size={17} /> Add and connect Epson
@@ -830,13 +868,13 @@ function Printers(props: PrintersProps) {
                 onClick={() => props.onSelect(p)}
                 className={`w-full border bg-white p-4 text-left ${props.selected?.id === p.id ? "border-lux-copper" : ""}`}
               >
-                <div className="flex justify-between">
+                <div className="flex gap-3">
+                  <img src={p.imageUrl || "/assets/printer-fallback.png"} alt="" className="h-14 w-16 shrink-0 object-cover" onError={(event) => { event.currentTarget.src = "/assets/printer-fallback.png"; }} />
+                  <span className="min-w-0 flex-1"><span className="flex justify-between gap-2">
                   <strong>{p.name}</strong>
                   <Status value={p.archived ? "ARCHIVED" : p.status} />
+                  </span><span className="mt-1 block text-xs font-bold text-lux-copper">{p.campusName}</span><span className="mt-1 block text-sm text-lux-ink/55">{p.location} · {p.model ?? p.provider}</span></span>
                 </div>
-                <p className="mt-1 text-sm text-lux-ink/55">
-                  {p.location} · {p.model ?? p.provider}
-                </p>
               </button>
             ))
           ) : (
@@ -849,11 +887,12 @@ function Printers(props: PrintersProps) {
           <section className="border bg-white p-5">
             <div className="flex flex-wrap justify-between gap-4">
               <div>
+                <img src={props.selected.imageUrl || "/assets/printer-fallback.png"} alt="" className="mb-4 h-32 w-44 object-cover" onError={(event) => { event.currentTarget.src = "/assets/printer-fallback.png"; }} />
                 <h2 className="text-2xl font-extrabold">
                   {props.selected.name}
                 </h2>
                 <p className="text-sm text-lux-ink/55">
-                  {props.selected.connectionState} ·{" "}
+                  {props.selected.campusName} · {props.selected.location} · {props.selected.connectionState} ·{" "}
                   {props.selected.active ? "Enabled" : "Disabled"}
                 </p>
                 {props.selected.providerDeviceId && <p className="mt-1 text-xs text-lux-ink/45">Epson device ID: {props.selected.providerDeviceId}</p>}
@@ -869,6 +908,7 @@ function Printers(props: PrintersProps) {
                 )}
               </div>
               <div className="flex flex-wrap gap-2">
+                <button onClick={() => props.onViewTransactions(props.selected!)} className="min-h-11 border px-4 font-bold">View transactions</button>
                 {props.selected.connectionState !== "CONNECTED" && (
                   <button
                     onClick={() => props.onConnect(props.selected!)}
@@ -1041,6 +1081,7 @@ function Detail({
             </div>
           ))}
         </dl>
+        {t.attempts && t.attempts.length > 0 && <section className="mt-7 border-t border-lux-ink/10 pt-6"><h3 className="font-extrabold">Payment attempts</h3><div className="mt-3 space-y-3">{t.attempts.map((attempt) => <div key={attempt.provider_payment_id} className="border border-lux-ink/10 bg-[#f7f8f6] p-3 text-sm"><div className="flex items-center justify-between gap-3"><span className="font-mono text-xs">{attempt.provider_payment_id}</span><Status value={attempt.status} /></div><p className="mt-2 text-xs text-lux-ink/50">{attempt.method?.toUpperCase() ?? "Unknown method"} · {date(attempt.created_at)}</p>{attempt.failure_reason && <p className="mt-2 text-xs font-semibold text-red-700">{attempt.failure_reason}</p>}</div>)}</div></section>}
         {t.payment_status === "CAPTURED" && t.print_status === "FAILED" && t.refund_status !== "PROCESSED" && t.refund_status !== "PENDING" && (
           <button onClick={onRefund} className="mt-6 min-h-11 w-full bg-red-700 px-4 font-bold text-white">
             Issue full refund

@@ -2,7 +2,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
-  ArrowLeft,
   ArrowRight,
   Check,
   ChevronDown,
@@ -15,7 +14,6 @@ import {
   Palette,
   Plus,
   RectangleHorizontal,
-  ShieldCheck,
   Smartphone,
   Sparkles,
 } from 'lucide-react'
@@ -24,7 +22,7 @@ import { useSessionStore } from '../store/sessionStore'
 import { validatePageRange } from '../lib/pageRangeParser'
 import ImageCropper from '../components/ImageCropper'
 import FilePreview from '../components/FilePreview'
-import AccountMenu from '../components/AccountMenu'
+import WorkflowHeader from '../components/WorkflowHeader'
 import { apiClient, type PrinterCapabilities } from '../lib/apiClient'
 
 function OptionCard<T extends string>({
@@ -288,59 +286,7 @@ export default function PrintOptionsScreen() {
   return (
     <main className="min-h-screen bg-lux-paper text-lux-ink screen-enter">
 
-      {/* Header */}
-      <header className="sticky top-0 z-30 border-b border-lux-ink/10 bg-lux-paper/95 px-4 py-3 backdrop-blur-md sm:px-8 sm:py-4">
-        <div className="mx-auto flex max-w-[1440px] items-center justify-between gap-4">
-
-          <button
-            onClick={() => navigate('/upload')}
-            className="touch-target flex items-center gap-2 text-sm font-bold text-lux-ink/60 transition-colors hover:text-lux-ink"
-            aria-label="Back to upload"
-          >
-            <ArrowLeft size={18} />
-
-            <span className="hidden sm:inline">
-              Back
-            </span>
-          </button>
-
-          <div className="flex items-center gap-2 text-[10px] font-extrabold uppercase tracking-[0.14em] sm:gap-3 sm:text-xs">
-            <span className="text-lux-ink/30">
-              Upload
-            </span>
-
-            <span className="text-lux-copper">
-              /
-            </span>
-
-            <span className="flex h-7 w-7 items-center justify-center rounded-full bg-lux-copper text-white">
-              2
-            </span>
-
-            <span>
-              Options
-            </span>
-
-            <span className="text-lux-ink/20">
-              /
-            </span>
-
-            <span className="text-lux-ink/30">
-              Pay
-            </span>
-          </div>
-
-          <div className="flex items-center gap-3 text-xs font-bold text-lux-ink/50">
-            <ShieldCheck
-              size={16}
-              className="text-lux-copper"
-            />
-
-            <span className="hidden sm:inline">Secure session</span>
-            <AccountMenu />
-          </div>
-        </div>
-      </header>
+      <WorkflowHeader step="options" onBack={() => navigate('/upload')} />
 
       {/* Main layout */}
       <div

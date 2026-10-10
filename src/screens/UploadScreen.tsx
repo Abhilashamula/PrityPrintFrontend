@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { UploadCloud, ArrowRight, X, AlertCircle, Check, FileText, LockKeyhole, MapPin, ShieldCheck, Smartphone } from 'lucide-react'
+import { UploadCloud, ArrowRight, X, AlertCircle, Check, LockKeyhole, MapPin, ShieldCheck, Smartphone } from 'lucide-react'
 import * as pdfjsLib from 'pdfjs-dist'
 import FilePreview from '../components/FilePreview'
 import { useSessionStore } from '../store/sessionStore'
 import { ACCEPTED_EXTENSIONS, validateDocumentFile } from '../lib/documentValidation'
-import AccountMenu from '../components/AccountMenu'
 import { apiClient } from '../lib/apiClient'
+import WorkflowHeader from '../components/WorkflowHeader'
 
 // Use CDN worker to avoid Vite worker bundling issues
 pdfjsLib.GlobalWorkerOptions.workerSrc =
@@ -126,21 +126,10 @@ export default function UploadScreen() {
 
   return (
     <div className="min-h-screen bg-lux-paper text-lux-ink flex flex-col screen-enter">
-      {/* Header */}
-      <div className="flex items-center justify-between px-6 py-5 border-b border-lux-ink/10 bg-lux-paper lg:px-10">
-        <a href="/" className="flex items-center gap-3" aria-label="Ping and Print home">
-          <span className="flex h-10 w-10 items-center justify-center rounded-full bg-lux-ink text-lux-paper"><FileText size={20} strokeWidth={1.6} /></span>
-          <span className="leading-none"><span className="block text-lg font-extrabold tracking-[-0.06em]">Ping<span className="text-lux-copper">&amp;</span>Print</span><span className="mt-1 block text-[9px] font-bold uppercase tracking-[0.16em] text-lux-ink/50">Campus printing</span></span>
-        </a>
-        <div className="flex items-center gap-2 text-xs font-extrabold uppercase tracking-[0.12em] text-lux-ink/45 sm:gap-4">
-          <span className="flex items-center gap-2 text-lux-ink"><span className="flex h-7 w-7 items-center justify-center rounded-full bg-lux-copper text-white">1</span><span className="hidden sm:inline">Upload</span></span>
-          <span className="text-lux-ink/20">/</span><span>Options</span><span className="text-lux-ink/20">/</span><span>Pay</span>
-          <AccountMenu />
-        </div>
-      </div>
+      <WorkflowHeader step="upload" />
 
       {/* Body */}
-      <div className="flex-1 flex flex-col items-center px-6 py-12 max-w-5xl mx-auto w-full gap-8 lg:py-16">
+      <div className="flex-1 flex flex-col items-center px-4 py-8 max-w-5xl mx-auto w-full gap-7 sm:px-6 sm:py-12 lg:py-16">
         <div className="w-full flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
           <div><p className="mb-3 text-xs font-extrabold uppercase tracking-[0.25em] text-lux-copper">Step 01 / Start here</p><h1 className="font-display text-5xl font-semibold leading-none text-lux-ink sm:text-6xl">Bring your work<br /><em className="text-lux-copper">to life.</em></h1><p className="mt-4 text-sm text-lux-ink/60">PDF, Office, OpenDocument, images and TIFF · up to {pricing.maxFileMb} MB</p>{selectedPrinterName && <div className="mt-4 inline-flex max-w-full items-center gap-2 border border-lux-copper/30 bg-white px-3 py-2 text-xs font-bold text-lux-ink"><MapPin size={14} className="shrink-0 text-lux-copper" /><span className="truncate">Printing at {selectedPrinterName}</span></div>}</div>
           <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-[0.1em] text-lux-ink/55"><LockKeyhole size={16} className="text-lux-copper" /> Deleted after printing</div>

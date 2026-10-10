@@ -22,7 +22,11 @@ export interface AuthResponse {
 export interface AvailablePrinter {
   id: string
   name: string
+  campusName: string
   location: string
+  imageUrl: string | null
+  manufacturer: string | null
+  model: string | null
   status: 'ONLINE' | 'BUSY' | 'OFFLINE' | 'PAPER_OUT' | 'ERROR' | string
 }
 
@@ -48,6 +52,8 @@ export interface AdminPrinter {
   id: string
   name: string
   location: string
+  campusName: string
+  imageUrl: string | null
   status: string
   active: boolean
   provider: 'EPSON_CONNECT' | 'LOCAL_AGENT' | string
@@ -69,11 +75,16 @@ export interface AdminTransaction {
   refund_id: string | null; refund_amount_minor: number | null; refund_status: string | null
   refund_reason: string | null; refund_failure_reason: string | null; refunded_at: string | null
   archived: boolean; archived_at: string | null
+  attempts?: Array<{
+    provider_payment_id: string; status: string; method: string | null; amount_minor: number; currency: string
+    failure_code: string | null; failure_reason: string | null; created_at: string; updated_at: string
+  }>
 }
 export interface PageResult<T> { items: T[]; page: number; size: number; total: number; totalPages: number }
 export interface AdminDashboard {
   total_orders: number; successful_payments: number; revenue_minor: number
-  queued_jobs: number; failed_jobs: number; active_printers: number
+  payment_failures: number; pending_refunds: number; queued_jobs: number; failed_jobs: number
+  unknown_jobs: number; completed_jobs: number; active_printers: number
 }
 
 export interface SupportedMedia {
@@ -236,13 +247,13 @@ export const apiClient = {
   adminPrinters() {
     return adminRequest<AdminPrinter[]>('/admin/printers')
   },
-  adminAddPrinter(details: { name: string; location: string; provider: string; agentKey?: string }) {
+  adminAddPrinter(details: { name: string; campusName: string; location: string; imageUrl: string; provider: string; agentKey?: string }) {
     return adminRequest<AdminPrinter>('/admin/printers', {
       method: 'POST',
       body: JSON.stringify(details),
     })
   },
-  adminUpdatePrinter(id: string, details: { name: string; location: string; active: boolean }) {
+  adminUpdatePrinter(id: string, details: { name: string; campusName: string; location: string; imageUrl: string; active: boolean }) {
     return adminRequest<AdminPrinter>(`/admin/printers/${id}`, { method: 'PUT', body: JSON.stringify(details) })
   },
   adminUpdatePrinterStatus(id: string, status: string) {
