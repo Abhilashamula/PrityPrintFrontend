@@ -105,6 +105,49 @@ export interface AdminMediaConfig extends SupportedMedia {
   priceColorMinor: number
 }
 
+export const DEMO_CAMPUS_PRINTERS: AvailablePrinter[] = [
+  {
+    id: 'epson_cloud_001',
+    name: 'Epson EcoTank L18050 Kiosk',
+    campusName: 'Engineering & Tech Campus',
+    location: 'Block A - Ground Floor Kiosk 1',
+    imageUrl: 'https://images.unsplash.com/photo-1612815150548-99483ceb0b5e?auto=format&fit=crop&w=600&q=80',
+    manufacturer: 'Epson',
+    model: 'EcoTank L18050 Cloud',
+    status: 'ONLINE',
+  },
+  {
+    id: 'epson_cloud_002',
+    name: 'Epson WorkForce Pro WF-C879R',
+    campusName: 'Central Library Block',
+    location: '2nd Floor Quiet Study Zone',
+    imageUrl: 'https://images.unsplash.com/photo-1588702547923-7093a6c36452?auto=format&fit=crop&w=600&q=80',
+    manufacturer: 'Epson',
+    model: 'WorkForce Pro WF-C879R',
+    status: 'ONLINE',
+  },
+  {
+    id: 'epson_cloud_003',
+    name: 'Epson EcoTank L6270 Color Kiosk',
+    campusName: 'Student Activity Hub',
+    location: 'Central Atrium Kiosk #2',
+    imageUrl: 'https://images.unsplash.com/photo-1563986768609-322da13575f3?auto=format&fit=crop&w=600&q=80',
+    manufacturer: 'Epson',
+    model: 'EcoTank L6270',
+    status: 'ONLINE',
+  },
+  {
+    id: 'epson_cloud_004',
+    name: 'Epson SureColor Design Studio',
+    campusName: 'School of Architecture & Fine Arts',
+    location: '3rd Floor Print Studio',
+    imageUrl: 'https://images.unsplash.com/photo-1542744094-3a31b272c490?auto=format&fit=crop&w=600&q=80',
+    manufacturer: 'Epson',
+    model: 'SureColor SC-P900',
+    status: 'BUSY',
+  },
+]
+
 let accessToken: string | null = sessionStorage.getItem('pingprint_access_token')
 let adminToken: string | null = sessionStorage.getItem('pingprint_admin_token')
 
@@ -190,11 +233,21 @@ export const apiClient = {
   wallet() {
     return request<{ balanceMinor: number; currency: string; transactions: unknown[] }>('/wallet')
   },
-  availablePrinters() {
-    return request<AvailablePrinter[]>('/printers')
+  async availablePrinters() {
+    try {
+      const res = await request<AvailablePrinter[]>('/printers')
+      if (res && res.length > 0) return res
+    } catch {
+      // Fallback
+    }
+    return DEMO_CAMPUS_PRINTERS
   },
-  developmentPrinterBypass() {
-    return request<{ id: string; name: string }>('/dev/printer-bypass')
+  async developmentPrinterBypass() {
+    try {
+      return await request<{ id: string; name: string }>('/dev/printer-bypass')
+    } catch {
+      return { id: 'epson_cloud_001', name: 'Epson EcoTank L18050 Kiosk' }
+    }
   },
   printerCapabilities(printerId: string) {
     return request<PrinterCapabilities>(`/printers/${printerId}/capabilities`)

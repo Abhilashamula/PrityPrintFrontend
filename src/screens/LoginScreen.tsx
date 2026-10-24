@@ -1,5 +1,5 @@
 import { FormEvent, useState } from 'react'
-import { ArrowLeft, ArrowRight, LockKeyhole, Printer } from 'lucide-react'
+import { ArrowLeft, ArrowRight, LockKeyhole, Printer, Sparkles, Zap } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { apiClient } from '../lib/apiClient'
 import { useAuthStore } from '../store/authStore'
@@ -34,23 +34,117 @@ export default function LoginScreen() {
   }
 
   return (
-    <main className="min-h-screen bg-lux-paper text-lux-ink screen-enter">
-      <header className="flex items-center justify-between border-b border-lux-ink/10 px-6 py-5 lg:px-10">
-        <button onClick={() => navigate('/')} className="flex items-center gap-3" aria-label="Back to home"><span className="flex h-10 w-10 items-center justify-center rounded-full bg-lux-ink text-lux-paper"><Printer size={20} /></span><span className="text-lg font-extrabold tracking-[-0.06em]">Ping<span className="text-lux-copper">&amp;</span>Print</span></button>
-        <button onClick={() => navigate('/')} className="flex items-center gap-2 text-sm font-bold text-lux-ink/60 hover:text-lux-ink"><ArrowLeft size={17} /> Back</button>
+    <main className="min-h-screen text-ink screen-enter flex flex-col"
+      style={{ background: 'linear-gradient(180deg, #091525 0%, #0f1923 100%)' }}>
+
+      {/* Orbs */}
+      <div className="pointer-events-none fixed inset-0 overflow-hidden">
+        <div className="orb orb-purple" style={{ width: 400, height: 400, top: '-5%', left: '-5%', opacity: 0.6 }} />
+        <div className="orb orb-pink" style={{ width: 300, height: 300, bottom: '10%', right: '-5%', opacity: 0.5 }} />
+        <div className="dot-grid absolute inset-0 opacity-25" />
+      </div>
+
+      {/* Header */}
+      <header className="header-enter relative z-10 flex items-center justify-between px-6 py-5 lg:px-10">
+        <button onClick={() => navigate('/')} className="flex items-center gap-3" aria-label="Back to home">
+          <span className="flex h-10 w-10 items-center justify-center rounded-xl"
+            style={{ background: 'linear-gradient(135deg, #6C63FF 0%, #FF3CAC 100%)' }}>
+            <Printer size={20} className="text-white" strokeWidth={1.8} />
+          </span>
+          <span className="text-lg font-extrabold tracking-tight text-ink" style={{ fontFamily: 'Syne, sans-serif' }}>
+            Ping<span className="text-gradient-brand">&</span>Print
+          </span>
+        </button>
+        <button onClick={() => navigate('/')}
+          className="flex items-center gap-2 text-sm font-bold text-ink-muted hover:text-ink glass rounded-xl px-4 py-2">
+          <ArrowLeft size={15} /> Back
+        </button>
       </header>
-      <div className="mx-auto flex max-w-md flex-col px-6 py-16">
-        <p className="mb-4 text-xs font-extrabold uppercase tracking-[0.25em] text-lux-copper">Your campus account</p>
-        <h1 className="font-display text-6xl font-semibold leading-[0.9]">Welcome<br /><em className="text-lux-copper">back.</em></h1>
-        <p className="mt-5 text-sm leading-6 text-lux-ink/60">Sign in to access your wallet and saved account details. You can always print as a guest.</p>
-        <form onSubmit={submit} className="mt-8 space-y-4 border border-lux-ink/10 bg-white p-6 shadow-sm sm:p-8">
-          <label className="block text-xs font-extrabold uppercase tracking-[0.1em] text-lux-ink/55">Email or username<input required type="text" value={email} onChange={(event) => setEmail(event.target.value)} className="mt-2 min-h-12 w-full border border-lux-ink/15 bg-lux-paper px-4 text-sm font-normal normal-case tracking-normal outline-none focus:border-lux-copper" placeholder="you@example.com" /></label>
-          <label className="block text-xs font-extrabold uppercase tracking-[0.1em] text-lux-ink/55">Password<input required type="password" value={password} onChange={(event) => setPassword(event.target.value)} className="mt-2 min-h-12 w-full border border-lux-ink/15 bg-lux-paper px-4 text-sm font-normal normal-case tracking-normal outline-none focus:border-lux-copper" placeholder="Your password" /></label>
-          {error && <p role="alert" className="border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>}
-          <button disabled={loading} className="flex min-h-13 w-full items-center justify-center gap-3 bg-lux-ink px-5 py-4 text-sm font-extrabold uppercase tracking-[0.12em] text-white hover:bg-lux-copper disabled:opacity-50">{loading ? 'Signing in…' : 'Sign in'} <ArrowRight size={17} /></button>
-        </form>
-        <button onClick={() => navigate('/signup')} className="mt-5 text-center text-sm font-bold text-lux-copper">Create a new account</button>
-        <p className="mt-6 flex items-center justify-center gap-2 text-xs text-lux-ink/45"><LockKeyhole size={14} className="text-lux-copper" /> JWT-secured account access</p>
+
+      {/* Body */}
+      <div className="relative z-10 flex flex-1 items-center justify-center px-4 py-10">
+        <div className="w-full max-w-md">
+          {/* Badge */}
+          <div className="mb-6 inline-flex items-center gap-2 glass-brand rounded-full px-4 py-2 text-xs font-bold uppercase tracking-wider text-brand-light">
+            <Sparkles size={12} /> Your campus account
+          </div>
+
+          <h1 className="text-5xl font-extrabold leading-tight tracking-tight mb-3" style={{ fontFamily: 'Syne, sans-serif' }}>
+            Welcome<br /><span className="text-gradient-brand">back.</span>
+          </h1>
+          <p className="mb-8 text-sm leading-6 text-ink-muted">
+            Sign in to access your wallet and saved print preferences. You can always print as a guest.
+          </p>
+
+          {/* Form card */}
+          <div className="glass rounded-3xl p-7 shadow-premium">
+            <form onSubmit={submit} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-[0.12em] text-ink-dim mb-2">
+                  Email or username
+                </label>
+                <input
+                  required
+                  type="text"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="input-dark"
+                  placeholder="you@college.edu"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-[0.12em] text-ink-dim mb-2">
+                  Password
+                </label>
+                <input
+                  required
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="input-dark"
+                  placeholder="Your password"
+                />
+              </div>
+
+              {error && (
+                <p role="alert"
+                  className="rounded-2xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+                  {error}
+                </p>
+              )}
+
+              <button
+                disabled={loading}
+                className="btn-primary shine-on-hover relative w-full flex items-center justify-center gap-3 py-4 mt-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                {loading ? (
+                  <><span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" /> Signing in…</>
+                ) : (
+                  <>Sign in <ArrowRight size={17} /></>
+                )}
+              </button>
+            </form>
+
+            <div className="mt-5 flex flex-col items-center gap-3 pt-5 border-t border-white/08">
+              <button onClick={() => navigate('/signup')}
+                className="text-sm font-bold text-brand-light hover:text-brand">
+                Create a new account →
+              </button>
+              <p className="flex items-center gap-2 text-xs text-ink-dim">
+                <LockKeyhole size={13} className="text-accent-teal" /> JWT-secured account access
+              </p>
+            </div>
+          </div>
+
+          {/* Feature chips */}
+          <div className="mt-6 flex flex-wrap justify-center gap-3">
+            {["Razorpay Payments", "Epson Cloud Print", "Multi-campus"].map((f) => (
+              <span key={f} className="glass rounded-full px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-ink-dim flex items-center gap-1.5">
+                <Zap size={10} className="text-brand" />{f}
+              </span>
+            ))}
+          </div>
+        </div>
       </div>
     </main>
   )

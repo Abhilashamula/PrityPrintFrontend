@@ -1,5 +1,5 @@
 import { FormEvent, useState } from 'react'
-import { ArrowLeft, ArrowRight, Check, LockKeyhole, Printer } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Check, LockKeyhole, Printer, Sparkles } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import { apiClient } from '../lib/apiClient'
 
@@ -36,12 +36,8 @@ export default function SignupScreen() {
     setLoading(true)
     try {
       await apiClient.signup({
-        name: name.trim(),
-        age: Number(age),
-        gender,
-        phone: phone.trim(),
-        email: email.trim(),
-        password,
+        name: name.trim(), age: Number(age), gender,
+        phone: phone.trim(), email: email.trim(), password,
       })
       setSuccess(true)
       setMessage('Your account is ready. Taking you to sign in…')
@@ -55,57 +51,188 @@ export default function SignupScreen() {
     }
   }
 
+  const scoreColors = ['bg-red-500', 'bg-yellow-400', 'bg-accent-teal']
+  const scoreColor = scoreColors[Math.max(0, passwordScore - 1)] || 'bg-white/10'
+
   return (
-    <main className="min-h-screen bg-lux-paper text-lux-ink screen-enter">
-      <header className="flex items-center justify-between border-b border-lux-ink/10 px-6 py-5 lg:px-10">
-        <button onClick={() => navigate('/')} className="flex items-center gap-3" aria-label="Back to home">
-          <span className="flex h-10 w-10 items-center justify-center rounded-full bg-lux-ink text-lux-paper"><Printer size={20} /></span>
-          <span className="text-lg font-extrabold tracking-[-0.06em]">Ping<span className="text-lux-copper">&amp;</span>Print</span>
+    <main className="min-h-screen text-ink screen-enter"
+      style={{ background: 'linear-gradient(180deg, #091525 0%, #0f1923 100%)' }}>
+
+      {/* Orbs */}
+      <div className="pointer-events-none fixed inset-0 overflow-hidden">
+        <div className="orb orb-purple" style={{ width: 500, height: 500, top: '-10%', right: '-8%', opacity: 0.6 }} />
+        <div className="orb orb-teal" style={{ width: 350, height: 350, bottom: '5%', left: '-5%', opacity: 0.5 }} />
+        <div className="dot-grid absolute inset-0 opacity-25" />
+      </div>
+
+      {/* Header */}
+      <header className="header-enter relative z-10 flex items-center justify-between px-6 py-5 lg:px-10">
+        <button onClick={() => navigate('/')} className="flex items-center gap-3">
+          <span className="flex h-10 w-10 items-center justify-center rounded-xl"
+            style={{ background: 'linear-gradient(135deg, #6C63FF 0%, #FF3CAC 100%)' }}>
+            <Printer size={20} className="text-white" />
+          </span>
+          <span className="text-lg font-extrabold text-ink" style={{ fontFamily: 'Syne, sans-serif' }}>
+            Ping<span className="text-gradient-brand">&</span>Print
+          </span>
         </button>
-        <button onClick={() => navigate('/')} className="flex items-center gap-2 text-sm font-bold text-lux-ink/60 hover:text-lux-ink"><ArrowLeft size={17} /> Back</button>
+        <button onClick={() => navigate('/')}
+          className="flex items-center gap-2 text-sm font-bold text-ink-muted hover:text-ink glass rounded-xl px-4 py-2">
+          <ArrowLeft size={15} /> Back
+        </button>
       </header>
 
-      <div className="mx-auto grid max-w-6xl gap-12 px-6 py-10 lg:grid-cols-[0.8fr_1.2fr] lg:px-10 lg:py-16">
+      {/* Body */}
+      <div className="relative z-10 mx-auto grid max-w-6xl gap-12 px-6 py-8 lg:grid-cols-[0.9fr_1.1fr] lg:px-10 lg:py-12">
+
+        {/* Left side — value props */}
         <section className="self-center">
-          <p className="mb-4 text-xs font-extrabold uppercase tracking-[0.25em] text-lux-copper">Your campus account</p>
-          <h1 className="font-display text-6xl font-semibold leading-[0.9]">Print with<br /><em className="text-lux-copper">less friction.</em></h1>
-          <p className="mt-6 max-w-md text-sm leading-6 text-lux-ink/60">Save your print preferences, use your wallet later, and keep guest printing available whenever you need speed.</p>
-          <div className="mt-8 space-y-3 text-sm font-bold text-lux-ink/65"><p className="flex items-center gap-3"><Check size={17} className="text-lux-copper" /> Basic wallet included</p><p className="flex items-center gap-3"><Check size={17} className="text-lux-copper" /> Email-secured account</p><p className="flex items-center gap-3"><Check size={17} className="text-lux-copper" /> Guest printing still available</p></div>
+          <div className="mb-5 inline-flex items-center gap-2 glass-brand rounded-full px-4 py-2 text-xs font-bold uppercase tracking-wider text-brand-light">
+            <Sparkles size={12} /> Your campus account
+          </div>
+          <h1 className="text-5xl font-extrabold leading-tight tracking-tight sm:text-6xl mb-5"
+            style={{ fontFamily: 'Syne, sans-serif' }}>
+            Print with<br />
+            <span className="text-gradient-brand">less friction.</span>
+          </h1>
+          <p className="max-w-md text-sm leading-6 text-ink-muted mb-8">
+            Save your print preferences, access Epson Cloud printers across campuses, and pay securely with Razorpay.
+          </p>
+          <div className="space-y-4">
+            {[
+              { text: "Multi-campus Epson Cloud printing", color: "text-accent-teal" },
+              { text: "Colour & B&W options with live pricing", color: "text-brand-light" },
+              { text: "Secure Razorpay payment integration", color: "text-accent-orange" },
+              { text: "Guest printing still available", color: "text-accent-teal" },
+            ].map((item) => (
+              <p key={item.text} className="flex items-center gap-3 text-sm font-medium text-ink-muted">
+                <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full ${item.color}`}
+                  style={{ background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)' }}>
+                  <Check size={13} strokeWidth={2.5} />
+                </span>
+                {item.text}
+              </p>
+            ))}
+          </div>
         </section>
 
-        <section className="border border-lux-ink/10 bg-white p-6 shadow-[0_18px_50px_rgba(23,33,31,0.08)] sm:p-9">
-          <div className="mb-7"><h2 className="font-display text-4xl leading-none">Create your account.</h2><p className="mt-3 text-sm text-lux-ink/55">All fields are used only for your account and support.</p></div>
+        {/* Right side — form */}
+        <section className="glass rounded-3xl p-6 shadow-premium sm:p-8">
+          <h2 className="text-3xl font-extrabold mb-1 text-ink" style={{ fontFamily: 'Syne, sans-serif' }}>Create your account.</h2>
+          <p className="text-sm text-ink-muted mb-7">All fields are used only for your account and support.</p>
+
           {success ? (
-            <div className="flex flex-col items-center justify-center py-12 text-center" role="status">
-              <div className="flex h-20 w-20 animate-bounce items-center justify-center rounded-full bg-lux-copper text-white shadow-[0_12px_30px_rgba(199,121,82,0.3)]">
-                <Check size={38} strokeWidth={3} />
+            <div className="flex flex-col items-center justify-center py-14 text-center" role="status">
+              <div className="flex h-20 w-20 items-center justify-center rounded-full text-white shadow-glow-brand"
+                style={{ background: 'linear-gradient(135deg, #6C63FF, #FF3CAC)' }}>
+                <Check size={36} strokeWidth={3} />
               </div>
-              <h3 className="mt-6 font-display text-4xl">You&apos;re in.</h3>
-              <p className="mt-3 text-sm text-lux-ink/55">Your account and wallet are ready.</p>
-              <div className="mt-6 h-1.5 w-48 overflow-hidden bg-lux-paper"><div className="h-full animate-[progress_1.4s_ease-in-out] bg-lux-copper" /></div>
+              <h3 className="mt-6 text-3xl font-extrabold" style={{ fontFamily: 'Syne, sans-serif' }}>You're in.</h3>
+              <p className="mt-3 text-sm text-ink-muted">Your account is ready. Redirecting…</p>
+              <div className="mt-6 h-1.5 w-48 overflow-hidden rounded-full" style={{ background: 'rgba(255,255,255,0.10)' }}>
+                <div className="h-full rounded-full animate-[progress_1.4s_ease-in-out] progress-bar" />
+              </div>
             </div>
-          ) : <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid gap-4 sm:grid-cols-2">
-              <label className="text-xs font-extrabold uppercase tracking-[0.1em] text-lux-ink/55">Name<input required value={name} onChange={(event) => setName(event.target.value)} className="mt-2 min-h-12 w-full border border-lux-ink/15 bg-lux-paper px-4 text-sm font-normal normal-case tracking-normal outline-none focus:border-lux-copper" placeholder="Your name" /></label>
-              <label className="text-xs font-extrabold uppercase tracking-[0.1em] text-lux-ink/55">Age<input required min="13" max="120" type="number" value={age} onChange={(event) => setAge(event.target.value)} className="mt-2 min-h-12 w-full border border-lux-ink/15 bg-lux-paper px-4 text-sm font-normal normal-case tracking-normal outline-none focus:border-lux-copper" placeholder="20" /></label>
-            </div>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <label className="text-xs font-extrabold uppercase tracking-[0.1em] text-lux-ink/55">Gender<select value={gender} onChange={(event) => setGender(event.target.value)} className="mt-2 min-h-12 w-full border border-lux-ink/15 bg-lux-paper px-4 text-sm font-normal normal-case tracking-normal outline-none focus:border-lux-copper"><option value="prefer_not_to_say">Prefer not to say</option><option value="female">Female</option><option value="male">Male</option><option value="other">Other</option></select></label>
-              <label className="text-xs font-extrabold uppercase tracking-[0.1em] text-lux-ink/55">Phone<input required type="tel" inputMode="numeric" pattern="[0-9]{10}" maxLength={10} value={phone} onChange={(event) => setPhone(event.target.value.replace(/\D/g, '').slice(0, 10))} className="mt-2 min-h-12 w-full border border-lux-ink/15 bg-lux-paper px-4 text-sm font-normal normal-case tracking-normal outline-none focus:border-lux-copper" placeholder="10-digit phone number" /></label>
-            </div>
-            <label className="block text-xs font-extrabold uppercase tracking-[0.1em] text-lux-ink/55">Email<input required type="email" value={email} onChange={(event) => setEmail(event.target.value)} className="mt-2 min-h-12 w-full border border-lux-ink/15 bg-lux-paper px-4 text-sm font-normal normal-case tracking-normal outline-none focus:border-lux-copper" placeholder="you@example.com" /></label>
-            <label className="block text-xs font-extrabold uppercase tracking-[0.1em] text-lux-ink/55">Password<input required minLength={6} type="password" value={password} onChange={(event) => setPassword(event.target.value)} className="mt-2 min-h-12 w-full border border-lux-ink/15 bg-lux-paper px-4 text-sm font-normal normal-case tracking-normal outline-none focus:border-lux-copper" placeholder="At least 6 characters" /></label>
-            <label className="block text-xs font-extrabold uppercase tracking-[0.1em] text-lux-ink/55">Confirm password<input required type="password" value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} className={`mt-2 min-h-12 w-full border bg-lux-paper px-4 text-sm font-normal normal-case tracking-normal outline-none focus:border-lux-copper ${confirmPassword && confirmPassword !== password ? 'border-red-300' : 'border-lux-ink/15'}`} placeholder="Repeat your password" /></label>
-            <div className="border border-lux-ink/10 bg-lux-paper p-4">
-              <div className="mb-3 flex items-center justify-between text-xs font-bold text-lux-ink/55"><span>Password strength</span><span>{passwordScore === 3 ? 'Ready' : `${passwordScore}/3`}</span></div>
-              <div className="mb-3 flex h-1.5 gap-1"><span className={`flex-1 ${passwordScore >= 1 ? 'bg-lux-copper' : 'bg-lux-ink/10'}`} /><span className={`flex-1 ${passwordScore >= 2 ? 'bg-lux-copper' : 'bg-lux-ink/10'}`} /><span className={`flex-1 ${passwordScore >= 3 ? 'bg-lux-copper' : 'bg-lux-ink/10'}`} /></div>
-              <div className="grid gap-1 text-xs text-lux-ink/50 sm:grid-cols-3"><span className={passwordChecks.length ? 'text-green-700' : ''}>{passwordChecks.length ? '✓' : '○'} 6+ characters</span><span className={passwordChecks.uppercase ? 'text-green-700' : ''}>{passwordChecks.uppercase ? '✓' : '○'} Uppercase</span><span className={passwordChecks.special ? 'text-green-700' : ''}>{passwordChecks.special ? '✓' : '○'} Special character</span></div>
-            </div>
-            {error && <p role="alert" className="border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</p>}
-            {message && <p role="status" className="border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">{message}</p>}
-            <button disabled={loading} className="flex min-h-13 w-full items-center justify-center gap-3 bg-lux-ink px-5 py-4 text-sm font-extrabold uppercase tracking-[0.12em] text-white transition-colors hover:bg-lux-copper disabled:opacity-50">{loading ? 'Creating account…' : 'Create account'} <ArrowRight size={17} /></button>
-          </form>}
-          <p className="mt-6 flex items-center justify-center gap-2 text-xs text-lux-ink/45"><LockKeyhole size={14} className="text-lux-copper" /> You can still print as a guest.</p>
+          ) : (
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-[0.12em] text-ink-dim mb-1.5">Name</label>
+                  <input required value={name} onChange={(e) => setName(e.target.value)}
+                    className="input-dark" placeholder="Your name" />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-[0.12em] text-ink-dim mb-1.5">Age</label>
+                  <input required min="13" max="120" type="number" value={age}
+                    onChange={(e) => setAge(e.target.value)}
+                    className="input-dark" placeholder="20" />
+                </div>
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-[0.12em] text-ink-dim mb-1.5">Gender</label>
+                  <select value={gender} onChange={(e) => setGender(e.target.value)}
+                    className="input-dark">
+                    <option value="prefer_not_to_say">Prefer not to say</option>
+                    <option value="female">Female</option>
+                    <option value="male">Male</option>
+                    <option value="other">Other</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-[0.12em] text-ink-dim mb-1.5">Phone</label>
+                  <input required type="tel" inputMode="numeric" pattern="[0-9]{10}" maxLength={10}
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
+                    className="input-dark" placeholder="10-digit number" />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-[0.12em] text-ink-dim mb-1.5">Email</label>
+                <input required type="email" value={email} onChange={(e) => setEmail(e.target.value)}
+                  className="input-dark" placeholder="you@college.edu" />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-[0.12em] text-ink-dim mb-1.5">Password</label>
+                <input required minLength={6} type="password" value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="input-dark" placeholder="At least 6 characters" />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-[0.12em] text-ink-dim mb-1.5">Confirm password</label>
+                <input required type="password" value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  className={`input-dark ${confirmPassword && confirmPassword !== password ? '!border-red-500/50' : ''}`}
+                  placeholder="Repeat your password" />
+              </div>
+
+              {/* Password strength */}
+              <div className="rounded-2xl p-4" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                <div className="mb-2.5 flex items-center justify-between text-xs font-bold">
+                  <span className="text-ink-dim">Password strength</span>
+                  <span className="text-ink-muted">{passwordScore === 3 ? '✓ Ready' : `${passwordScore}/3`}</span>
+                </div>
+                <div className="flex h-1.5 gap-1 mb-3">
+                  {[0, 1, 2].map((i) => (
+                    <div key={i} className={`flex-1 rounded-full transition-all duration-300 ${passwordScore > i ? scoreColor : 'bg-white/10'}`} />
+                  ))}
+                </div>
+                <div className="grid gap-1 text-xs sm:grid-cols-3">
+                  {[
+                    { ok: passwordChecks.length, text: '6+ characters' },
+                    { ok: passwordChecks.uppercase, text: 'Uppercase' },
+                    { ok: passwordChecks.special, text: 'Special char' },
+                  ].map((c) => (
+                    <span key={c.text} className={c.ok ? 'text-accent-teal' : 'text-ink-dim'}>
+                      {c.ok ? '✓' : '○'} {c.text}
+                    </span>
+                  ))}
+                </div>
+              </div>
+
+              {error && <p role="alert" className="rounded-2xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">{error}</p>}
+              {message && <p role="status" className="rounded-2xl border border-accent-teal/30 bg-accent-teal/10 px-4 py-3 text-sm text-accent-teal">{message}</p>}
+
+              <button disabled={loading}
+                className="btn-primary shine-on-hover relative w-full flex items-center justify-center gap-3 py-4 disabled:opacity-50 disabled:cursor-not-allowed">
+                {loading ? (
+                  <><span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" /> Creating account…</>
+                ) : (
+                  <>Create account <ArrowRight size={17} /></>
+                )}
+              </button>
+            </form>
+          )}
+
+          {!success && (
+            <p className="mt-5 flex items-center justify-center gap-2 text-xs text-ink-dim">
+              <LockKeyhole size={13} className="text-accent-teal" /> You can still print as a guest.
+            </p>
+          )}
         </section>
       </div>
     </main>
